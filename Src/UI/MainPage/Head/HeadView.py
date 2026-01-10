@@ -14,6 +14,7 @@ class HeadView(QWidget):
         self.AlarmButton = None
         self.SettingButton = None
 
+
         self.InitUI()
 
     def InitUI(self):
@@ -41,6 +42,8 @@ class HeadView(QWidget):
             width: 125px;
             height: 40px;
         """)
+        self.ConnectButton.clicked.connect(self.open_connection_dialog)
+
         self.AlarmButton = QPushButton("正常", self)
         AlarmIcon = QIcon()
         AlarmIcon.addFile("Resource/AlarmNormal.png",state=QIcon.State.Off)
@@ -92,3 +95,12 @@ class HeadView(QWidget):
         
         # 设置布局
         self.setLayout(self.layout)
+
+    def open_connection_dialog(self):
+        """打开串口连接对话框"""
+        # 动态导入对话框，避免循环导入
+        from Src.UI.Dialog.SerialConnectionDialog.SerialConnectionDialog import SeireConnectionDialog
+        connection_dialog = SeireConnectionDialog(self)
+
+        # 显示对话框（模态）
+        connection_dialog.exec()
