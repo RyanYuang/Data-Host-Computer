@@ -3,7 +3,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QPalette, QColor
 from .Head.HeadView import HeadView
 from .DataMonitor.DataMonitor import DataItem, DataMonitor
-
+from .ControlPanel.ControlPanel import ControlPanel
 class MainPage(QWidget):
     def __init__(self):
         super().__init__()
@@ -18,13 +18,16 @@ class MainPage(QWidget):
 
         # 初始化组件
         head_view = HeadView()  # 创建 HeadView 的实例
-        head_view.resize(self.width(), 68)
+        head_view.setMinimumSize(self.width(), 68)
         data_monitor = DataMonitor()  # 创建 DataMonitor 实例
-        data_monitor.resize(self.width(), 200)
+        data_monitor.setMinimumSize(self.width(), 250)
+        control_panel = ControlPanel()
+        control_panel.setMinimumSize(1225,671)
 
         # 初始化layout
         layout = QVBoxLayout()
         layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         layout.addWidget(head_view)  # 将 HeadView 实例添加到布局中
         layout.addWidget(data_monitor)  # 将 DataMonitor 实例添加到布局中
+        layout.addWidget(control_panel)
         self.setLayout(layout)
