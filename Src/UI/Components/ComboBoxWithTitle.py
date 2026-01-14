@@ -70,7 +70,7 @@ class ComboBoxWithTitle(QWidget):
                 subcontrol-origin: padding;
                 subcontrol-position: top right;
                 width: 30px;
-                border-left: 1px solid rgb(209, 213, 220);
+                
                 border-top-right-radius: 8px;
                 border-bottom-right-radius: 8px;
                 color: rgb(0, 0, 0);

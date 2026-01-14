@@ -18,8 +18,6 @@ class SerialManger(QTSerial.QSerialPort):
         self.setFlowControl(self.flowControl().NoFlowControl)
         self.setBaudRate(9600)
 
-
-
     # 获取函数
     def GetSerialInfo(self):
         """
@@ -35,6 +33,7 @@ class SerialManger(QTSerial.QSerialPort):
         """
         print("GetSerialList")
         serialList = QTSerial.QSerialPortInfo.availablePorts()
+        print(f"serialList: {serialList}")
         return serialList
     def GetSerialStatus(self):
         """
@@ -43,5 +42,6 @@ class SerialManger(QTSerial.QSerialPort):
         """
         print("GetSerialStatus")
         return self.isOpen()
+        
     
 
