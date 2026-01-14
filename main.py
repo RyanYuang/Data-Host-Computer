@@ -14,6 +14,6 @@ if __name__ == "__main__":
     main_page = MainPage()  # 创建MainPage实例
     main_window.setCentralWidget(main_page)  # 将MainPage设置为主窗口的中央控件
     main_window.setWindowTitle("环境监测系统")  # 设置窗口标题
-    main_window.resize(1257, 1043)  # 设置窗口大小
+    main_window.resize(1257, 818)  # 设置窗口大小
     main_window.show()  # 显示窗口
     sys.exit(app.exec())

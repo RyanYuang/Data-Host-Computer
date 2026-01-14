@@ -16,7 +16,6 @@ class DataItem:
 class DataMonitor(QWidget):
     def __init__(self, parent=None):
         super(QWidget, self).__init__(parent)
-        self.setStyleSheet("""background-color: rgb(255, 0, 255);""")
         # 类似C语言结构体数组的数据结构
         self.data_array = []
         
@@ -36,13 +35,18 @@ class DataMonitor(QWidget):
         """初始化用户界面"""
         layout = QVBoxLayout()
         layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        layout.setSpacing(0)
 
         # 标题
         title_label = QLabel("数据监控", self)
         title_font = QFont()
+
         title_font.setBold(True)
         title_font.setPointSize(20)
         title_label.setFont(title_font)
+        title_label.setStyleSheet(
+            """ color: rgb(0, 0, 0);"""
+        )
         layout.addWidget(title_label)
 
         container = QWidget(self)
@@ -72,7 +76,7 @@ class DataMonitor(QWidget):
             
             # 数据值
             data_label = QLabel(str(data_item.data_value), datacontainer[i])
-            data_label.setStyleSheet("color: blue; font-size: 16px; font-weight: bold;")
+            data_label.setStyleSheet("color: blue; font-size: 36px; font-weight: bold;")
             data_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             
             # 添加到布局 - 修正：只添加一次每个控件
@@ -80,7 +84,9 @@ class DataMonitor(QWidget):
             datacontainer[i].layout().addWidget(name_label)
             datacontainer[i].layout().addStretch()  # 添加弹性空间
             datacontainer[i].layout().addWidget(data_label)
+            datacontainer[i].layout().setAlignment(Qt.AlignmentFlag.AlignLeft)
             container.layout().addWidget(datacontainer[i])
+
         # 将容器添加到主布局
         layout.addWidget(container)
         self.setLayout(layout)

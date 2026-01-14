@@ -96,8 +96,16 @@ class HeadView(QWidget):
         # 设置布局
         self.setLayout(self.layout)
 
+    # 连接串口函数
+    def connect_serial(self):
+        print("连接串口")
+        # 动态导入串口管理器，避免循环导入
+        from Src.Serial.SerialManger import SerialManger
+        serial_manager = SerialManger()
+        serial_manager.connect_serial()
+
     def open_connection_dialog(self):
-        """打开串口连接对话框"""
+        
         # 动态导入对话框，避免循环导入
         from Src.UI.Dialog.SerialConnectionDialog.SerialConnectionDialog import SeireConnectionDialog
         connection_dialog = SeireConnectionDialog(self)

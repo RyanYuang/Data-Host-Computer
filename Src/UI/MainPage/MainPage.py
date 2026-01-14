@@ -22,7 +22,7 @@ class MainPage(QWidget):
         data_monitor = DataMonitor()  # 创建 DataMonitor 实例
         data_monitor.setMinimumSize(self.width(), 250)
         control_panel = ControlPanel()
-        control_panel.setMinimumSize(1225,671)
+        control_panel.setMinimumSize(1225,454)
 
         # 初始化layout
         layout = QVBoxLayout()
