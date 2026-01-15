@@ -1,0 +1,11 @@
+# python环境
+.venv/
+__pycache__/
+*.pyc
+
+# IDE配置文件
+.vscode/
+.idea/
+extensions.json
+settings.json
+launch.json
