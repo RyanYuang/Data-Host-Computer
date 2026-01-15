@@ -42,6 +42,37 @@ class SerialManger(QTSerial.QSerialPort):
         """
         print("GetSerialStatus")
         return self.isOpen()
+    
+    def OpenPortByName(self, port_name: str) -> bool:
+        """按名称打开串口，返回是否成功。"""
+        try:
+            ports = QTSerial.QSerialPortInfo.availablePorts()
+            target = None
+            for p in ports:
+                if p.portName() == port_name:
+                    target = p
+                    break
+            if target is None:
+                print(f"OpenPortByName: port {port_name} not found")
+                return False
+
+            self.setPort(target)
+            opened = self.open(QTSerial.QSerialPort.OpenModeFlag.ReadWrite)
+            if not opened:
+                print(f"OpenPortByName: failed to open {port_name}")
+                return False
+            return True
+        except Exception as e:
+            print(f"OpenPortByName exception: {e}")
+            return False
+
+    def ClosePort(self) -> None:
+        """关闭当前串口（如果已打开）。"""
+        try:
+            if self.isOpen():
+                self.close()
+        except Exception as e:
+            print(f"ClosePort exception: {e}")
         
     
 

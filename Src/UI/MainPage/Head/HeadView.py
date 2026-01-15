@@ -13,6 +13,7 @@ class HeadView(QWidget):
         self.ConnectButton = None
         self.AlarmButton = None
         self.SettingButton = None
+        self.serial_manager = None
 
 
         self.InitUI()
@@ -35,13 +36,21 @@ class HeadView(QWidget):
 
         # 创建按钮
         self.ConnectButton = QPushButton("连接", self)
-        self.ConnectButton.setStyleSheet("""
+        self._connect_btn_default_style = """
             Color:rgb(193,0,7);
             background-color: rgb(255,226,226);
             border-radius: 10px;
             width: 125px;
             height: 40px;
-        """)
+        """
+        self._connect_btn_connected_style = """
+            Color:rgb(193,0,7);
+            background-color: rgb(220, 252, 231);
+            border-radius: 10px;
+            width: 125px;
+            height: 40px;
+        """
+        self.ConnectButton.setStyleSheet(self._connect_btn_default_style)
         self.ConnectButton.clicked.connect(self.open_connection_dialog)
 
         self.AlarmButton = QPushButton("正常", self)
@@ -109,6 +118,38 @@ class HeadView(QWidget):
         # 动态导入对话框，避免循环导入
         from Src.UI.Dialog.SerialConnectionDialog.SerialConnectionDialog import SeireConnectionDialog
         connection_dialog = SeireConnectionDialog(self)
-
-        # 显示对话框（模态）
+        # 显示对话框（模态）并检查连接结果
         connection_dialog.exec()
+        try:
+            if hasattr(connection_dialog, 'serial_manager') and connection_dialog.serial_manager.GetSerialStatus():
+                # 已成功连接，保存 serial_manager 引用并更新按钮为已连接状态
+                self.serial_manager = connection_dialog.serial_manager
+                self.ConnectButton.setText("已连接")
+                self.ConnectButton.setStyleSheet(self._connect_btn_connected_style)
+                try:
+                    self.ConnectButton.clicked.disconnect()
+                except Exception:
+                    pass
+                self.ConnectButton.clicked.connect(self.disconnect_serial)
+        except Exception as e:
+            print(f"open_connection_dialog: 检查连接状态时出错: {e}")
+
+    def disconnect_serial(self):
+        """断开当前串口连接并恢复按钮状态"""
+        try:
+            if self.serial_manager:
+                try:
+                    self.serial_manager.ClosePort()
+                except Exception as e:
+                    print(f"disconnect_serial: ClosePort 异常: {e}")
+            # 恢复按钮样式与行为
+            self.ConnectButton.setText("连接")
+            self.ConnectButton.setStyleSheet(self._connect_btn_default_style)
+            try:
+                self.ConnectButton.clicked.disconnect()
+            except Exception:
+                pass
+            self.ConnectButton.clicked.connect(self.open_connection_dialog)
+            self.serial_manager = None
+        except Exception as e:
+            print(f"disconnect_serial 异常: {e}")
