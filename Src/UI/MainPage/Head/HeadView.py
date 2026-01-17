@@ -4,6 +4,9 @@ from PyQt6.QtCore import QSize
 from PyQt6.QtGui import QFont,QIcon
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QSpacerItem, QSizePolicy ,QHBoxLayout
 
+from Src.MVP import BasePresenter
+
+
 class HeadView(QWidget):
     def __init__(self, parent=None):
         super(QWidget, self).__init__(parent)
@@ -17,6 +20,9 @@ class HeadView(QWidget):
 
 
         self.InitUI()
+
+    def set_presenter(self,Presenter: BasePresenter):
+        self.Presenter = Presenter
 
     def InitUI(self):
         """
