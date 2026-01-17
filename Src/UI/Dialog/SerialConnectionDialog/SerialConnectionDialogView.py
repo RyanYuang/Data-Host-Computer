@@ -5,7 +5,7 @@ from Src.UI.Components.ComboBoxWithTitle import ComboBoxWithTitle
 from Src.Serial.SerialManger import SerialManger
 
 
-class SeireConnectionDialog(QDialog):
+class SeireConnectionDialogView(QDialog):
     def __init__(self, parent=None):
         QDialog.__init__(self, parent)
         # 隐藏系统标题栏，但保持对话框行为
@@ -32,9 +32,9 @@ class SeireConnectionDialog(QDialog):
         """)
         
         # Main container widget with rounded corners
-        main_container = QWidget(self)
-        main_container.setObjectName("main_container")
-        main_container.setStyleSheet("""
+        self.main_container = QWidget(self)
+        self.main_container.setObjectName("main_container")
+        self.main_container.setStyleSheet("""
         #main_container {
                 background-color: rgb(255, 255, 255);  
                 border-radius: 16px;                          
@@ -43,36 +43,36 @@ class SeireConnectionDialog(QDialog):
         """)
 
         # Main layout for dialog
-        dialog_layout = QVBoxLayout(self)
-        dialog_layout.setContentsMargins(0, 0, 0, 0)
-        dialog_layout.addWidget(main_container)
+        self.dialog_layout = QVBoxLayout(self)
+        self.dialog_layout.setContentsMargins(0, 0, 0, 0)
+        self.dialog_layout.addWidget(self.main_container)
         
         # Layout for container content
-        layout = QVBoxLayout(main_container)
-        layout.setContentsMargins(0, 0, 0, 0)
+        self.layout = QVBoxLayout(self.main_container)
+        self.layout.setContentsMargins(0, 0, 0, 0)
 
         # Head
-        titleWidget = QWidget(main_container)
-        titleWidget.setLayout(QHBoxLayout())
-        titleWidget.layout().setContentsMargins(20, 20, 20, 20)
+        self.titleWidget = QWidget(self.main_container)
+        self.titleWidget.setLayout(QHBoxLayout())
+        self.titleWidget.layout().setContentsMargins(20, 20, 20, 20)
 
-        icon_label = QLabel(titleWidget)
+        self.icon_label = QLabel(self.titleWidget)
         pixmap = QPixmap("Resource/Connection Dialog Iocn.png")
-        icon_label.setPixmap(pixmap)
-        icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        title = QLabel(titleWidget)
-        title.setText("串口连接配置")
-        title.setStyleSheet("""
+        self.icon_label.setPixmap(pixmap)
+        self.icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.title = QLabel(self.titleWidget)
+        self.title.setText("串口连接配置")
+        self.title.setStyleSheet("""
             color: rgb(0, 0, 0);
         """)
-        titleWidget.layout().addWidget(icon_label)
-        titleWidget.layout().addWidget(title)
-        titleWidget.layout().addStretch()  # Push close button to the right
+        self.titleWidget.layout().addWidget(self.icon_label)
+        self.titleWidget.layout().addWidget(self.title)
+        self.titleWidget.layout().addStretch()  # Push close button to the right
         
         # Close button
-        close_button = QPushButton("×", main_container)
-        close_button.setFixedSize(32, 32)
-        close_button.setStyleSheet("""
+        self.close_button = QPushButton("×", self.main_container)
+        self.close_button.setFixedSize(32, 32)
+        self.close_button.setStyleSheet("""
             QPushButton {
                 background-color: transparent;
                 border: none;
@@ -88,15 +88,15 @@ class SeireConnectionDialog(QDialog):
                 background-color: rgb(220, 220, 220);
             }
         """)
-        close_button.clicked.connect(self.close)
-        titleWidget.layout().addWidget(close_button)
+        self.close_button.clicked.connect(self.close)
+        self.titleWidget.layout().addWidget(self.close_button)
 
         # combo组件
-        combocontainer = QWidget(main_container)
-        combocontainer.setLayout(QVBoxLayout())
-        combocontainer.layout().setContentsMargins(24, 24,24, 33)
-        combocontainer.setObjectName("combocontainer")
-        combocontainer.setStyleSheet("""
+        self.combocontainer = QWidget(self.main_container)
+        self.combocontainer.setLayout(QVBoxLayout())
+        self.combocontainer.layout().setContentsMargins(24, 24,24, 33)
+        self.combocontainer.setObjectName("combocontainer")
+        self.combocontainer.setStyleSheet("""
             #combocontainer
             {
                 border: 1px solid rgb(229, 231, 235);
@@ -104,25 +104,21 @@ class SeireConnectionDialog(QDialog):
         """)
         
         # 串口选择 - 使用通用组件
-        def on_port_selected(selected_text):
-            """串口选择回调函数"""
-            print(f"选中的串口: {selected_text}")
-        
         self.port_combo = ComboBoxWithTitle(
-            main_container,
+            self.main_container,
             title="串口选择",
             items=["Empty"],
-            callback=on_port_selected
+            callback=self.on_port_selected_callback
         )
-        combocontainer.layout().addWidget(self.port_combo)
+        self.combocontainer.layout().addWidget(self.port_combo)
         
         # 立即刷新一次串口列表
         self.refresh_serial_ports()
 
         # 确认以及取消组件
-        confirmAndCancelWidget = QWidget(main_container)
-        confirmAndCancelWidget.setObjectName("confirmAndCancelWidget")
-        confirmAndCancelWidget.setStyleSheet("""
+        self.confirmAndCancelWidget = QWidget(self.main_container)
+        self.confirmAndCancelWidget.setObjectName("confirmAndCancelWidget")
+        self.confirmAndCancelWidget.setStyleSheet("""
             #confirmAndCancelWidget
             {
                 background-color: rgb(249, 250, 251);
@@ -130,38 +126,42 @@ class SeireConnectionDialog(QDialog):
                 border-bottom-right-radius: 16px;
             }
         """)
-        confirmAndCancelWidget.setLayout(QHBoxLayout())
+        self.confirmAndCancelWidget.setLayout(QHBoxLayout())
 
         # 取消按钮
-        cancelBtn = QPushButton(confirmAndCancelWidget)
-        cancelBtn.setMinimumSize(306,46)
-        cancelBtn.setStyleSheet("""
+        self.cancelBtn = QPushButton(self.confirmAndCancelWidget)
+        self.cancelBtn.setMinimumSize(306,46)
+        self.cancelBtn.setStyleSheet("""
             border: 1px solid rgb(229, 231, 235);
             border-radius: 10px;
             color: rgb(54, 65, 83);
         """)
-        cancelBtn.setText("取消")
-        cancelBtn.clicked.connect(self.close)
+        self.cancelBtn.setText("取消")
+        self.cancelBtn.clicked.connect(self.close)
 
         # 连接按钮
-        confirmBtn = QPushButton(confirmAndCancelWidget)
-        confirmBtn.setMinimumSize(306,46)
-        confirmBtn.setStyleSheet("""
+        self.confirmBtn = QPushButton(self.confirmAndCancelWidget)
+        self.confirmBtn.setMinimumSize(306,46)
+        self.confirmBtn.setStyleSheet("""
             border-radius: 10px;
             background-color: rgb(79, 57, 246);
         """)
-        confirmBtn.setText("连接设备")
-        confirmBtn.clicked.connect(self.on_connect_clicked)
-        confirmAndCancelWidget.layout().addWidget(cancelBtn)
-        confirmAndCancelWidget.layout().addWidget(confirmBtn)
+        self.confirmBtn.setText("连接设备")
+        self.confirmBtn.clicked.connect(self.on_connect_clicked)
+        self.confirmAndCancelWidget.layout().addWidget(self.cancelBtn)
+        self.confirmAndCancelWidget.layout().addWidget(self.confirmBtn)
 
 
-        layout.addWidget(titleWidget)
-        layout.addWidget(combocontainer)
-        layout.addWidget(confirmAndCancelWidget)
+        self.layout.addWidget(self.titleWidget)
+        self.layout.addWidget(self.combocontainer)
+        self.layout.addWidget(self.confirmAndCancelWidget)
         
         # 连接关闭信号，停止定时器
         self.finished.connect(self.on_dialog_closed)
+    
+    def on_port_selected_callback(self, selected_text):
+        """串口选择回调函数"""
+        print(f"选中的串口: {selected_text}")
     
     def refresh_serial_ports(self):
         """刷新串口列表"""
