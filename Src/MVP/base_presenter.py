@@ -1,20 +1,11 @@
-from typing import Any
+from typing import TYPE_CHECKING
 
+if TYPE_CHECKING:
+    from .base_view import BaseView
+    from .base_model import BaseModel
 
 class BasePresenter:
-    """Simple base presenter that holds a reference to the view.
-
-    Subclasses should implement `start()` to wire view events and initialize state.
-    """
-    def __init__(self, view: Any):
-        self.view = view
-        # If the view supports set_presenter, call it so view->presenter linkage exists
-        if hasattr(view, "set_presenter"):
-            try:
-                view.set_presenter(self)
-            except Exception:
-                pass
-
-    def start(self) -> None:
-        """Called after wiring to perform any initialization."""
-        return None
+    def __init__(self, view: "BaseView", model: "BaseModel" = None):
+        self._view = view
+        self._model = model
+        self._view.set_presenter(self)

@@ -1,10 +1,14 @@
-from typing import Protocol, TYPE_CHECKING
+from PyQt6.QtWidgets import QWidget
 
-if TYPE_CHECKING:
-    from .base_presenter import BasePresenter
+class BaseView(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._presenter = None
 
+    @property
+    def presenter(self):
+        return self._presenter
 
-class BaseView(Protocol):
-    def set_presenter(self, presenter: "BasePresenter") -> None:
-        """Attach a presenter to the view."""
-        ...
+    @presenter.setter
+    def presenter(self, presenter):
+        self._presenter = presenter
