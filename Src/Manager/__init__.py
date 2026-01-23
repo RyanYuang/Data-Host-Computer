@@ -1,0 +1,1 @@
+# This file makes SerialConnectionDialog a Python package
