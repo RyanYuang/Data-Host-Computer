@@ -137,7 +137,6 @@ class SeireConnectionDialogView(QDialog):
             color: rgb(54, 65, 83);
         """)
         self.cancelBtn.setText("取消")
-        self.cancelBtn.clicked.connect(self.close)
 
         # 连接按钮
         self.confirmBtn = QPushButton(self.confirmAndCancelWidget)
@@ -147,7 +146,6 @@ class SeireConnectionDialogView(QDialog):
             background-color: rgb(79, 57, 246);
         """)
         self.confirmBtn.setText("连接设备")
-        self.confirmBtn.clicked.connect(self.on_connect_clicked)
         self.confirmAndCancelWidget.layout().addWidget(self.cancelBtn)
         self.confirmAndCancelWidget.layout().addWidget(self.confirmBtn)
 
@@ -175,7 +173,7 @@ class SeireConnectionDialogView(QDialog):
             # 将串口对象转换为字符串列表
             port_names = []
             for port in serial_ports:
-                port_name = port.portName()
+                port_name = port.device
                 port_names.append(port_name)
             
             # 如果没有串口，显示提示信息
@@ -203,24 +201,5 @@ class SeireConnectionDialogView(QDialog):
     def on_dialog_closed(self, result):
         """对话框关闭时停止定时器"""
         self.refresh_timer.stop()
-
-    def on_connect_clicked(self):
-        """连接按钮回调，使用 SerialManger 的接口打开串口。"""
-        try:
-            if not self.port_combo:
-                return
-            port_name = self.port_combo.getCurrentText()
-            if not port_name or port_name == "未检测到串口":
-                print("请选择有效的串口后再连接")
-                return
-
-            success = self.serial_manager.OpenPortByName(port_name)
-            if success:
-                print(f"已连接串口: {port_name}")
-                # 停止刷新并关闭对话框
-                self.refresh_timer.stop()
-                self.accept()
-            else:
-                print(f"连接串口失败: {port_name}")
-        except Exception as e:
-            print(f"on_connect_clicked exception: {e}")
+    def set_presenter(self,presenter):
+        self._presenter = presenter

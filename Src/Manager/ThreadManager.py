@@ -63,6 +63,18 @@ class ThreadManager(QObject):
         thread.start()
         print(f"[ThreadManager] Thread '{name}' started.")
 
+    def is_thread_running(self, name: str) -> bool:
+        """
+        检查指定名称的线程当前是否正在运行。
+
+        :param name: 线程的唯一标识名称
+        :return: 如果线程正在运行，则返回 True；否则返回 False。
+        """
+        if name in self._threads:
+            thread = self._threads[name]
+            return thread.isRunning()
+        return False
+
     def stop_worker(self, name: str):
         """
         停止指定名称的线程。

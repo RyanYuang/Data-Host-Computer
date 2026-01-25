@@ -1,11 +1,14 @@
 from PyQt6.QtWidgets import QWidget, QVBoxLayout
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QPalette, QColor
+
 from .Head.HeadView import HeadView
 from .Head.HeadModel import HeadModel
 from .Head.HeadPresenter import HeadPresenter
 from Src.Message.MessageManager import MessageManager
-from .DataMonitor.DataMonitor import DataItem, DataMonitor
+from .DataMonitor.DataMonitorView import DataMonitorView
+from .DataMonitor.DataMonitorModel import DataMonitorModel
+from .DataMonitor.DataMonitorPresenter import DataMonitorPresenter
 from .ControlPanel.ControlPanel import ControlPanel
 from Src.MVP import BasePresenter
 
@@ -28,11 +31,14 @@ class MainPage(QWidget):
         head_model = HeadModel()
         head_view = HeadView(self)
         self._head_presenter = HeadPresenter(view=head_view, model=head_model, message_manager=self._message_manager)
-        
         head_view.setMinimumSize(self.width(), 68)
+
+        # --- DataMonitor MVP Setup ---
+        data_monitor_view = DataMonitorView()
+        data_monitor_model = DataMonitorModel()
+        self._data_monitor_presenter = DataMonitorPresenter(data_monitor_view, data_monitor_model, self._message_manager)
+        data_monitor_view.setMinimumSize(self.width(), 250)
         
-        data_monitor = DataMonitor()  # 创建 DataMonitor 实例
-        data_monitor.setMinimumSize(self.width(), 250)
         control_panel = ControlPanel()
         control_panel.setMinimumSize(1225,454)
 
@@ -40,6 +46,6 @@ class MainPage(QWidget):
         layout = QVBoxLayout()
         layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         layout.addWidget(head_view)  # 将 HeadView 实例添加到布局中
-        layout.addWidget(data_monitor)  # 将 DataMonitor 实例添加到布局中
+        layout.addWidget(data_monitor_view)  # 将 DataMonitorView 实例添加到布局中
         layout.addWidget(control_panel)
         self.setLayout(layout)

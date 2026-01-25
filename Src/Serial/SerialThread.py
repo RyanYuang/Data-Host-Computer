@@ -1,104 +1,52 @@
-import PyQt6.QtSerialPort as QTSerial
-from PyQt6 import QtCore
-import SerialManger as SerialManger
+from PyQt6.QtCore import QObject, pyqtSignal, QThread
+from .SerialManger import SerialManger
+import time
+from Src.DataEngine.DataEngineBase import DataEngine
 
 
-class SerialThread(QTSerial.QSerialPort):
-    data_received = QtCore.pyqtSignal(bytes)
+class SerialThread(QThread):
+    data_received = pyqtSignal(bytes)
 
-    def __init__(self, parent=None):
-        QTSerial.QSerialPort.__init__(self, parent)
-        self.serial_manager = SerialManger.SerialManger()
-        self._paused = False
+    def __init__(self, parent=None, name=None):
+        super().__init__(parent)
+        self.serial_manager = SerialManger()
         self._running = False
+        self.name = name
 
-    # 线程启动函数
-    def start(self) -> bool:
-        """打开串口并开始监听 readyRead 信号。
+    def run(self):
+        """线程运行函数，循环读取串口数据。"""
+        self._running = True
+        print("串口线程已启动...")
+        while self._running:
+            if self.serial_manager.GetSerialStatus():
+                # 串口已打开
+                try:
+                    data = self.serial_manager.read_all()
+                    if data:
+                        # print(data.decode('utf-8',errors='ignore'),end='')
+                        self.data_received.emit(data)
+                    # else:
+                    #     # 可以在这里取消注释来查看持续轮询的状态
+                    #     print("串口线程: 串口已连接，但无数据")
+                except Exception as e:
+                    print(f"SerialThread.run: read error: {e}")
+                    time.sleep(0.1)
+            else:
+                # 串口未打开
+                print("串口线程: 等待串口连接...")
+                # 如果串口未连接，则休眠较长时间以减少打印输出
+                time.sleep(1)
+            
+            # 短暂休眠，避免忙等待
+            self.msleep(20) # 20ms
 
-        如果没有指定端口，会尝试使用第一个可用端口。
-        返回 True 表示成功打开，False 表示失败或没有可用端口。
-        """
-        if self.serial_manager.isOpen():
-            self._running = True
-            return True
-
-        ports = self.serial_manager.GetSerialList()
-        if not ports:
-            print("SerialThread.start: no serial ports available")
-            return False
-
-        port_info = ports[0]
-        try:
-            self.serial_manager.setPort(port_info)
-            opened = self.serial_manager.open(QTSerial.QSerialPort.OpenModeFlag.ReadWrite)
-            if not opened:
-                print(f"SerialThread.start: failed to open port {port_info.portName()}")
-                return False
-
-            # 连接数据就绪信号
-            try:
-                self.serial_manager.readyRead.connect(self._on_ready_read)
-            except Exception:
-                # ignore if already connected or connection fails
-                pass
-
-            self._running = True
-            self._paused = False
-            return True
-        except Exception as e:
-            print(f"SerialThread.start: exception opening port: {e}")
-            return False
-
-    # 线程停止函数
     def stop(self) -> None:
-        """停止监听并关闭串口。"""
+        """停止线程。"""
         self._running = False
-        self._paused = False
-        try:
-            try:
-                self.serial_manager.readyRead.disconnect(self._on_ready_read)
-            except Exception:
-                pass
-            if self.serial_manager.isOpen():
-                self.serial_manager.close()
-        except Exception as e:
-            print(f"SerialThread.stop: exception: {e}")
-
-    # 线程挂起函数
-    def pause(self) -> None:
-        """暂停接收数据（会在 readyRead 回调中忽略数据）。"""
-        self._paused = True
-
-    # 线程恢复函数
-    def resume(self) -> None:
-        """恢复接收数据。"""
-        self._paused = False
-
-    # 线程运行函数
-    def run(self) -> None:
-        """兼容性的运行入口：尝试启动串口监听。
-
-        注意：此类不是 QThread 子类，run 只是便捷入口，不会创建新线程。
-        """
-        return self.start()
-
-    def _on_ready_read(self) -> None:
-        """内部 readyRead 处理器，将读取到的数据以 bytes 形式通过 `data_received` 发出。"""
-        if not self._running or self._paused:
-            # 如果暂停或已停止，直接丢弃数据
-            try:
-                _ = self.serial_manager.readAll()
-            except Exception:
-                pass
-            return
-
-        try:
-            qba = self.serial_manager.readAll()
-            # QByteArray -> bytes
-            data = bytes(qba)
-            if data:
-                self.data_received.emit(data)
-        except Exception as e:
-            print(f"SerialThread._on_ready_read: read error: {e}")
+        # 等待线程安全退出
+        self.wait()
+    
+    def BindDataEngine(self, data_engine:DataEngine):
+        print("绑定数据引擎")
+        self.data_received.connect(data_engine.push_data)
 

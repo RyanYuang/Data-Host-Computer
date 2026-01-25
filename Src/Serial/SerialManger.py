@@ -1,78 +1,99 @@
-import PyQt6.QtSerialPort as QTSerial
+import serial
+import serial.tools.list_ports
 
-class SerialManger(QTSerial.QSerialPort):
+class SerialManger:
+    _instance = None
+    _initialized = False
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super(SerialManger, cls).__new__(cls)
+        return cls._instance
+
     def __init__(self, parent=None):
-        QTSerial.QSerialPort.__init__(self, parent)
-        # 默认配置
-        """
-            baud rate   9600
-            StopBits    1
-            DataBIts    8
-            Parity      None
-            Flowctl     None
-        """
-        # 写死配置
-        self.setStopBits(self.stopBits().OneStop) #1 bit
-        self.setDataBits(self.dataBits().Data8)
-        self.setParity(self.parity().NoParity)
-        self.setFlowControl(self.flowControl().NoFlowControl)
-        self.setBaudRate(9600)
+        if self._initialized:
+            return
+        
+        self.serial = serial.Serial()
+        self.serial.baudrate = 115200
+        self.serial.bytesize = serial.EIGHTBITS
+        self.serial.parity = serial.PARITY_NONE
+        self.serial.stopbits = serial.STOPBITS_ONE
+        self.serial.timeout = 0.1  # Set a short timeout for read operations
+        self._initialized = True
 
-    # 获取函数
-    def GetSerialInfo(self):
-        """
-        @brief 获取串口信息
-        :return: 串口信息
-        """
-        print("GetSerialInfo")
-        return
     def GetSerialList(self):
         """
         @brief 获取串口列表
-        :return: 串口列表
+        :return: 串口信息对象的列表
         """
-        print("GetSerialList")
-        serialList = QTSerial.QSerialPortInfo.availablePorts()
-        print(f"serialList: {serialList}")
-        return serialList
+        return serial.tools.list_ports.comports()
+
     def GetSerialStatus(self):
         """
         @brief 获取串口状态
         :return: 串口状态
         """
-        print("GetSerialStatus")
-        return self.isOpen()
-    
-    def OpenPortByName(self, port_name: str) -> bool:
-        """按名称打开串口，返回是否成功。"""
-        try:
-            ports = QTSerial.QSerialPortInfo.availablePorts()
-            target = None
-            for p in ports:
-                if p.portName() == port_name:
-                    target = p
-                    break
-            if target is None:
-                print(f"OpenPortByName: port {port_name} not found")
-                return False
+        return self.serial.is_open
 
-            self.setPort(target)
-            opened = self.open(QTSerial.QSerialPort.OpenModeFlag.ReadWrite)
-            if not opened:
-                print(f"OpenPortByName: failed to open {port_name}")
-                return False
+    def OpenPortByName(self, port_name: str, baudrate: int = 115200) -> bool:
+        """按名称打开串口，返回是否成功。"""
+        if self.serial.is_open:
+            self.ClosePort()
+        
+        try:
+            self.serial.port = port_name
+            self.serial.baudrate = baudrate
+            self.serial.open()
             return True
-        except Exception as e:
-            print(f"OpenPortByName exception: {e}")
+        except serial.SerialException as e:
+            print(f"OpenPortByName: failed to open {port_name}: {e}")
             return False
 
     def ClosePort(self) -> None:
         """关闭当前串口（如果已打开）。"""
+        if self.serial.is_open:
+            try:
+                self.serial.close()
+            except Exception as e:
+                print(f"ClosePort exception: {e}")
+    
+    def read(self, num_bytes: int):
+        """Reads data from the serial port."""
+        if not self.serial.is_open:
+            return None
         try:
-            if self.isOpen():
-                self.close()
-        except Exception as e:
-            print(f"ClosePort exception: {e}")
+            return self.serial.read(num_bytes)
+        except serial.SerialException as e:
+            print(f"Serial read error: {e}")
+            self.ClosePort()
+            return None
+
+    def read_all(self):
+        """Read all available bytes from serial buffer."""
+        if not self.serial.is_open:
+            return None
+        try:
+            # in_waiting gets the number of bytes in the input buffer
+            if self.serial.in_waiting > 0:
+                return self.serial.read(self.serial.in_waiting)
+            return None
+        except serial.SerialException as e:
+            print(f"Serial read_all error: {e}")
+            self.ClosePort()
+            return None
+
+    def write(self, data: bytes):
+        """Writes data to the serial port."""
+        if not self.serial.is_open:
+            return False
+        try:
+            self.serial.write(data)
+            return True
+        except serial.SerialException as e:
+            print(f"Serial write error: {e}")
+            self.ClosePort()
+            return False
         
     
 

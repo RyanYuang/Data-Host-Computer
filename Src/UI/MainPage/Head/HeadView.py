@@ -5,6 +5,11 @@ from PyQt6.QtGui import QFont,QIcon
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QSpacerItem, QSizePolicy ,QHBoxLayout
 
 from Src.MVP import BasePresenter
+from Src.Message.MessageManager import MessageManager
+from Src.Serial.SerialManger import SerialManger
+from Src.UI.Dialog.SerialConnectionDialog.SerialConnectionDialogView import SeireConnectionDialogView
+from Src.UI.Dialog.SerialConnectionDialog.SerialConnectionDialogModel import SerialConnectionDialogModel
+from Src.UI.Dialog.SerialConnectionDialog.SerialConnectionDialogPresenter import SerialConnectionDialogPresenter
 
 
 class HeadView(QWidget):
@@ -16,8 +21,12 @@ class HeadView(QWidget):
         self.ConnectButton = None
         self.AlarmButton = None
         self.SettingButton = None
-        self.serial_manager = None
+        
+        # 获取串口管理器的单例
+        self.serial_manager = SerialManger()
 
+        # 创建消息管理器
+        self._message_manager = MessageManager()
 
         self.InitUI()
 
@@ -111,51 +120,42 @@ class HeadView(QWidget):
         # 设置布局
         self.setLayout(self.layout)
 
-    # 连接串口函数
-    def connect_serial(self):
-        print("连接串口")
-        # 动态导入串口管理器，避免循环导入
-        from Src.Serial.SerialManger import SerialManger
-        serial_manager = SerialManger()
-        serial_manager.connect_serial()
-
     def open_connection_dialog(self):
-        
-        # 动态导入对话框，避免循环导入
-        from Src.UI.Dialog.SerialConnectionDialog.SerialConnectionDialog import SeireConnectionDialog
-        connection_dialog = SeireConnectionDialog(self)
-        # 显示对话框（模态）并检查连接结果
+        # 创建并显示对话框
+        connection_dialog = SeireConnectionDialogView(self)
+        connection_dialog_model = SerialConnectionDialogModel()
+        connection_dialog_presenter = SerialConnectionDialogPresenter(
+            connection_dialog, 
+            connection_dialog_model, 
+            self._message_manager
+        )
         connection_dialog.exec()
-        try:
-            if hasattr(connection_dialog, 'serial_manager') and connection_dialog.serial_manager.GetSerialStatus():
-                # 已成功连接，保存 serial_manager 引用并更新按钮为已连接状态
-                self.serial_manager = connection_dialog.serial_manager
-                self.ConnectButton.setText("已连接")
-                self.ConnectButton.setStyleSheet(self._connect_btn_connected_style)
-                try:
-                    self.ConnectButton.clicked.disconnect()
-                except Exception:
-                    pass
-                self.ConnectButton.clicked.connect(self.disconnect_serial)
-        except Exception as e:
-            print(f"open_connection_dialog: 检查连接状态时出错: {e}")
-
+        
+        # 对话框关闭后，检查单例管理器的状态
+        if self.serial_manager.GetSerialStatus():
+            self.update_ui_to_connected()
+        
     def disconnect_serial(self):
         """断开当前串口连接并恢复按钮状态"""
+        self.serial_manager.ClosePort()
+        self.update_ui_to_disconnected()
+
+    def update_ui_to_connected(self):
+        """更新UI为已连接状态"""
+        self.ConnectButton.setText("已连接")
+        self.ConnectButton.setStyleSheet(self._connect_btn_connected_style)
         try:
-            if self.serial_manager:
-                try:
-                    self.serial_manager.ClosePort()
-                except Exception as e:
-                    print(f"disconnect_serial: ClosePort 异常: {e}")
-            # 恢复按钮样式与行为
-            self.ConnectButton.setText("连接")
-            self.ConnectButton.setStyleSheet(self._connect_btn_default_style)
-            try:
-                self.ConnectButton.clicked.disconnect()
-            except Exception:
-                pass
-            self.ConnectButton.clicked.connect(self.open_connection_dialog)
-            self.serial_manager = None
-        except Exception as e:
-            print(f"disconnect_serial 异常: {e}")
+            self.ConnectButton.clicked.disconnect()
+        except TypeError:
+            pass  # 如果没有连接的槽，会引发TypeError
+        self.ConnectButton.clicked.connect(self.disconnect_serial)
+
+    def update_ui_to_disconnected(self):
+        """更新UI为已断开状态"""
+        self.ConnectButton.setText("连接")
+        self.ConnectButton.setStyleSheet(self._connect_btn_default_style)
+        try:
+            self.ConnectButton.clicked.disconnect()
+        except TypeError:
+            pass
+        self.ConnectButton.clicked.connect(self.open_connection_dialog)
