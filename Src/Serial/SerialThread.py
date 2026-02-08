@@ -1,5 +1,7 @@
 from PyQt6.QtCore import QObject, pyqtSignal, QThread
 from .SerialManager import SerialManager
+from Src.Message.MessageManager import MessageManager
+from Src.Message.Message import Message
 import time
 from Src.DataEngine.DataEngineBase import DataEngine
 
@@ -12,6 +14,11 @@ class SerialThread(QThread):
         self.serial_manager = SerialManager()
         self._running = False
         self.name = name
+        self._message_manager = None  # 消息管理器引用
+
+    def set_message_manager(self, message_manager: MessageManager):
+        """设置消息管理器"""
+        self._message_manager = message_manager
 
     def run(self):
         """线程运行函数，循环读取串口数据。"""
@@ -19,6 +26,10 @@ class SerialThread(QThread):
         print("串口线程已启动...")
         while self._running:
             if self.serial_manager.GetSerialStatus():
+                if self._message_manager:
+                    self._message_manager.dispatch(
+                        Message("serial.port.status",{"status":self.serial_manager.GetSerialStatus()})
+                    )
                 # 串口已打开
                 try:
                     data = self.serial_manager.read_all()
@@ -26,6 +37,12 @@ class SerialThread(QThread):
                         # print(data.decode('utf-8',errors='ignore'),end='')
                         print(data)
                         self.data_received.emit(data)
+                        
+                        # 发送原始数据消息（供其他模块使用）
+                        if self._message_manager:
+                            self._message_manager.dispatch(
+                                Message("serial.data.raw", {"data": data.decode('utf-8', errors='ignore').strip()})
+                            )
                     # else:
                     #     # 可以在这里取消注释来查看持续轮询的状态
                     #     print("串口线程: 串口已连接，但无数据")

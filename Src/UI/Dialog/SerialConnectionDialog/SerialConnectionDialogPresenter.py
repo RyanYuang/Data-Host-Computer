@@ -31,6 +31,7 @@ class SerialConnectionDialogPresenter(BasePresenter,MessageHandler):
             success = self._view.serial_manager.OpenPortByName(port_name)
             if success:
                 print(f"已连接串口: {port_name}")
+                self.message.dispatch(Message("serial.connection.status", True))
                 # 停止刷新并关闭对话框
                 self._view.refresh_timer.stop()
                 self._view.accept()

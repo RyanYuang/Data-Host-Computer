@@ -25,7 +25,7 @@ class HeadView(QWidget):
         # 获取串口管理器的单例
         self.serial_manager = SerialManager()
 
-        # 创建消息管理器
+        # 获取消息管理器的单例
         self._message_manager = MessageManager()
 
         self.InitUI()
