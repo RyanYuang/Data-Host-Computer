@@ -12,6 +12,7 @@ class AlertThresholdView(QDialog):
     # 定义信号
     saveClicked = pyqtSignal(dict)  # 保存按钮点击信号
     cancelClicked = pyqtSignal()    # 取消按钮点击信号
+    testSoundClicked = pyqtSignal()  # 测试声音按钮点击信号
     
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -164,6 +165,11 @@ class AlertThresholdView(QDialog):
         self.sound_checkbox.setChecked(True)
         layout.addWidget(self.sound_checkbox)
         
+        # 测试按钮
+        self.test_sound_btn = QPushButton("🔊 测试声音")
+        self.test_sound_btn.clicked.connect(self._onTestSoundClicked)
+        layout.addWidget(self.test_sound_btn)
+        
         layout.addStretch()
         group.setLayout(layout)
         return group
@@ -239,3 +245,7 @@ class AlertThresholdView(QDialog):
         """恢复默认按钮点击"""
         if self._presenter:
             self._presenter.on_restore_default()
+    
+    def _onTestSoundClicked(self):
+        """测试声音按钮点击"""
+        self.testSoundClicked.emit()

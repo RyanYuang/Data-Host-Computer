@@ -25,6 +25,7 @@ class AlertThresholdPresenter(BasePresenter, MessageHandler):
         # 连接视图信号
         view.saveClicked.connect(self._on_save)
         view.cancelClicked.connect(self._on_cancel)
+        view.testSoundClicked.connect(self._on_test_sound)
         
         # 加载保存的配置
         self._load_config()
@@ -70,6 +71,13 @@ class AlertThresholdPresenter(BasePresenter, MessageHandler):
         """取消操作"""
         # 发送取消消息
         self._message_manager.dispatch(Message("alert.config.cancelled"))
+    
+    def _on_test_sound(self):
+        """测试声音按钮点击"""
+        print("[AlertThresholdPresenter] 测试警告声音")
+        self._message_manager.dispatch(
+            Message("alert.sound.play", {"level": "warning"})
+        )
     
     def _update_model_from_values(self, values: dict):
         """从视图值更新模型"""

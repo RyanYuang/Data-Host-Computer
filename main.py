@@ -7,6 +7,7 @@ from Src.Manager.ThreadManager import ThreadManager
 from Src.Serial.SerialThread import SerialThread
 from Src.Serial.SerialManager import SerialManager
 from Src.DataEngine.CarDataEngine import CarDataEngine
+from Src.Message.AlertManager import AlertManager
 
 if __name__ == "__main__":
     exit_code = run_startup(sys.argv)
@@ -38,6 +39,11 @@ if __name__ == "__main__":
     # QMainWindow是PyQt6中主窗口类
     main_window = QMainWindow()
     main_page = MainPage()  # 创建MainPage实例
+    
+    # 初始化告警管理器（必须在 main_page 之后，因为需要 MessageManager 单例）
+    alert_manager = AlertManager(main_page._message_manager)
+
+
     # 将 MainPage 与 Presenter 绑定（MVP）- 传递 control_panel 和 message_manager
     presenter = MainPagePresenter(
         view=main_page,
