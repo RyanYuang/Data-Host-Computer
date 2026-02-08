@@ -10,11 +10,18 @@ def singleton(class_):
     return get_instance
 
 from Src.DataEngine.DataEngineBase import DataEngine
+from Src.Message.MessageManager import MessageManager
+from Src.Message.Message import Message
 
 @singleton
 class CarDataEngine(DataEngine):
     def __init__(self, parent=None):
         super().__init__(parent)
+        self._message_manager = None  # 消息管理器引用
+
+    def set_message_manager(self, message_manager: MessageManager):
+        """设置消息管理器"""
+        self._message_manager = message_manager
 
 
     def process_buffer(self):
@@ -51,6 +58,18 @@ class CarDataEngine(DataEngine):
                         # 仅在成功解析出数据时发送列表
                         if parsed_data:
                             self.packet_parsed.emit(parsed_data)
+                            
+                            # 发送传感器数据更新消息（供告警系统使用）
+                            if self._message_manager and len(parsed_data) >= 4:
+                                sensor_data = {
+                                    "temperature": parsed_data[0],  # 温度
+                                    "humidity": parsed_data[1],     # 湿度
+                                    "co": parsed_data[2],           # CO浓度
+                                    "light": parsed_data[3],        # 光照强度
+                                }
+                                self._message_manager.dispatch(
+                                    Message("sensor.data.updated", sensor_data)
+                                )
 
                     except ValueError as e:
                         print(f"Parsing data error: {e}, packet: '{decoded_str}'")

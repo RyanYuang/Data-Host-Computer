@@ -1,11 +1,15 @@
 from Src.MVP.base_presenter import BasePresenter
 from Src.Message.MessageHandler import MessageHandler
 from Src.Message.Message import Message, HandleResult
+from Src.Message.MessageManager import MessageManager
 from .HeadModel import HeadModel
 from .HeadView import HeadView
+from Src.UI.Dialog.AlertThresholdDialog.AlertThresholdView import AlertThresholdView
+from Src.UI.Dialog.AlertThresholdDialog.AlertThresholdModel import AlertThresholdModel
+from Src.UI.Dialog.AlertThresholdDialog.AlertThresholdPresenter import AlertThresholdPresenter
 
 class HeadPresenter(BasePresenter, MessageHandler):
-    def __init__(self, view: HeadView, model: HeadModel, message_manager):
+    def __init__(self, view: HeadView, model: HeadModel, message_manager: MessageManager):
         super().__init__(view)
         self.model = model
         self.message_manager = message_manager
@@ -24,10 +28,21 @@ class HeadPresenter(BasePresenter, MessageHandler):
         # self.message_manager.dispatch(Message("ui.head.connect_clicked"))
 
     def on_alarm_button_clicked(self):
+        """告警按钮点击 - 打开告警设置对话框"""
         self.model.is_alarm_triggered = self._view.AlarmButton.isChecked()
-        print(f"Alarm button clicked, is_alarm_triggered: {self.model.is_alarm_triggered}")
-        # In a real scenario, this might dispatch a message or update a service
-        # self.message_manager.dispatch(Message("domain.alarm.set", self.model.is_alarm_triggered))
+        
+        if self.model.is_alarm_triggered:
+            # 点击后打开告警设置对话框
+            alert_dialog = AlertThresholdView(self._view)
+            alert_model = AlertThresholdModel()
+            alert_presenter = AlertThresholdPresenter(alert_dialog, alert_model, self.message_manager)
+            alert_dialog.exec()
+            
+            # 对话框关闭后，重置按钮状态（因为对话框是用来设置的，不是触发的）
+            self._view.AlarmButton.setChecked(False)
+            self.model.is_alarm_triggered = False
+        else:
+            print(f"Alarm button unchecked, is_alarm_triggered: {self.model.is_alarm_triggered}")
 
 
     def on_setting_button_clicked(self):
@@ -37,8 +52,8 @@ class HeadPresenter(BasePresenter, MessageHandler):
     def handle(self, message: Message) -> HandleResult:
         if message.type == "serial.connection.status":
             self.model.connection_status = message.payload
-            self._view.set_connection_status(self.model.connection_status)
-            return HandleResult.CONSUMED
+            # self._view.set_connection_status(self.model.connection_status)
+            return HandleResult.CONTINUE
         
         if message.type == "serial.ports.available":
             self.model.available_ports = message.payload
