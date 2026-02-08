@@ -1,21 +1,21 @@
 import serial
 import serial.tools.list_ports
 
-class SerialManger:
+class SerialManager:
     _instance = None
     _initialized = False
 
     def __new__(cls, *args, **kwargs):
         if cls._instance is None:
-            cls._instance = super(SerialManger, cls).__new__(cls)
+            cls._instance = super(SerialManager, cls).__new__(cls)
         return cls._instance
 
-    def __init__(self, parent=None):
+    def __init__(self):
         if self._initialized:
             return
         
         self.serial = serial.Serial()
-        self.serial.baudrate = 115200
+        self.serial.baudrate = 9600
         self.serial.bytesize = serial.EIGHTBITS
         self.serial.parity = serial.PARITY_NONE
         self.serial.stopbits = serial.STOPBITS_ONE
@@ -43,7 +43,7 @@ class SerialManger:
         
         try:
             self.serial.port = port_name
-            self.serial.baudrate = baudrate
+            self.serial.baudrate = self.serial.baudrate
             self.serial.open()
             return True
         except serial.SerialException as e:

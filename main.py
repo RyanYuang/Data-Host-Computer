@@ -5,7 +5,7 @@ from Src.UI.MainPage.MainPage import MainPage  # 修改导入方式
 from Src.UI.MainPage.MainPagePresenter import MainPagePresenter
 from Src.Manager.ThreadManager import ThreadManager
 from Src.Serial.SerialThread import SerialThread
-from Src.Serial.SerialManger import SerialManger
+from Src.Serial.SerialManager import SerialManager
 from Src.DataEngine.CarDataEngine import CarDataEngine
 
 if __name__ == "__main__":
@@ -13,6 +13,17 @@ if __name__ == "__main__":
     if exit_code is not None:
         sys.exit(exit_code)
     app = QApplication(sys.argv)
+
+    # 测试串口管理器是否为单例 -- Start
+    serial_manager_1 = SerialManager()
+    serial_manager_2 = SerialManager()
+    if serial_manager_1 is serial_manager_2:
+        print("串口管理器是单例")
+
+
+    # 测试串口管理器是否为单例 -- End
+
+
     # 创建数据引擎
     data_engine = CarDataEngine()
 

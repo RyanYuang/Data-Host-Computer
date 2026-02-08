@@ -8,4 +8,4 @@ class BasePresenter:
     def __init__(self, view: "BaseView", model: "BaseModel" = None):
         self._view = view
         self._model = model
-        self._view.set_presenter(self)
+        self._view.presenter = self

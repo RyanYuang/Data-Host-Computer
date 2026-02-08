@@ -1,7 +1,7 @@
 from dataclasses import dataclass,field
 from typing import Dict
 
-from Src.Serial.SerialManger import SerialManger
+from Src.Serial.SerialManager import SerialManager
 
 
 @dataclass

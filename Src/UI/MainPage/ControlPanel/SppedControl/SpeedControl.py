@@ -4,12 +4,13 @@ from PyQt6.QtCore import QSize, Qt
 from PyQt6.QtGui import QFont, QIcon
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QSpacerItem, QSizePolicy, QHBoxLayout, \
     QGridLayout, QButtonGroup
-
+from Src.Serial.SerialManager import SerialManager
 
 class SpeedParament:
     def __init__(self,percentage = 0):
         super(SpeedParament, self).__init__()
         self.percentage = percentage
+
 
 class SpeedControl(QWidget):
     def __init__(self, parent=None):
@@ -20,6 +21,7 @@ class SpeedControl(QWidget):
         self.SpeedParamentlist.append(SpeedParament(75))
         self.SpeedParamentlist.append(SpeedParament(100))
         self.initUI()
+        self.serial = SerialManager()
     def initUI(self):
         Maincontainer = QWidget(self)
         Maincontainer.setMinimumSize(QSize(200, 300))
@@ -31,7 +33,7 @@ class SpeedControl(QWidget):
         buttonsgroup = QButtonGroup(self)
         for i in range(0,4):
             buttons.append(QPushButton(str(self.SpeedParamentlist[i].percentage)+'%'))
-            buttonsgroup.addButton(buttons[i])
+            buttonsgroup.addButton(buttons[i],i)
             buttons[i].setCheckable(True)
             buttons[i].setStyleSheet("""
                 QPushButton {
@@ -52,4 +54,12 @@ class SpeedControl(QWidget):
         parent_layout.setContentsMargins(0, 0, 0, 0)
         parent_layout.addWidget(title)
         parent_layout.addWidget(Maincontainer)
+        buttonsgroup.idClicked.connect(self.on_clicked)
+
+    def build_speed_cmd(self, btn_id: int) -> bytes:
+        return f"@{btn_id + 4}\r\n".encode("ascii")
+
+    def on_clicked(self, btn_id: int):
+        data_pack = self.build_speed_cmd(btn_id)
+        self.serial.write(data_pack)
 

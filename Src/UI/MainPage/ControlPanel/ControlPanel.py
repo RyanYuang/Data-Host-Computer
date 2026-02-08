@@ -3,16 +3,18 @@ from PIL.ImageQt import QPixmap
 from PyQt6.QtCore import QSize, Qt
 from PyQt6.QtGui import QFont, QIcon
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QSpacerItem, QSizePolicy, QHBoxLayout
-from .DirectionControlpanel.DirecrtionControlpanel import DirectionControlPanel
+from .DirectionControlPanel.DirectionControlPanelView import DirectionControlPanelView
+from .DirectionControlPanel.DirectionControlPanelModel import DirectionControlPanelModel
+from .DirectionControlPanel.DirectionControlPanelPresenter import DirectionControlPanelPresenter
 from .SppedControl.SpeedControl import SpeedControl
 class ControlPanel(QWidget):
     def __init__(self, parent=None):
         super(QWidget, self).__init__(parent)
 
-        
+
         # 初始化UI
         self.initUI()
-        
+
     def initUI(self):
 
         MainContainer = QWidget(self)
@@ -41,9 +43,14 @@ class ControlPanel(QWidget):
         """)
         deviceHint.setFixedHeight(46)
 
-        direction_control_panel = DirectionControlPanel()
+        direction_control_panel_view = DirectionControlPanelView()
+        direction_control_panel_model = DirectionControlPanelModel()
+        direction_control_panel_presenter = DirectionControlPanelPresenter(
+            view=direction_control_panel_view,
+            model=direction_control_panel_model
+        )
         speed_control = SpeedControl()
-        
+
         # Create a wrapper widget with title for speed_control
         speed_control_wrapper = QWidget(self)
         speed_control_layout = QVBoxLayout(speed_control_wrapper)
@@ -58,13 +65,13 @@ class ControlPanel(QWidget):
         speed_control_title.setFixedHeight(24)
         speed_control_layout.addWidget(speed_control_title)
         speed_control_layout.addWidget(speed_control)
-        
+
         controlwidget = QWidget(self)
         controlwidget.setFixedSize(QSize(1177, 300))
         controlwidgetlayout = QHBoxLayout(controlwidget)
         controlwidgetlayout.setSpacing(0)
         controlwidgetlayout.setContentsMargins(0, 0, 0, 0)
-        controlwidgetlayout.addWidget(direction_control_panel, 0)
+        controlwidgetlayout.addWidget(direction_control_panel_view, 0)
         controlwidgetlayout.addWidget(speed_control_wrapper, 0)
         controlwidgetlayout.setSpacing(30)
         controlwidgetlayout.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -77,4 +84,3 @@ class ControlPanel(QWidget):
         MainContainer.setLayout(layout)
         self.setLayout(QVBoxLayout())
         self.layout().addWidget(MainContainer)
-

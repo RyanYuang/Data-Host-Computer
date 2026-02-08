@@ -1,5 +1,5 @@
 from PyQt6.QtCore import QObject, pyqtSignal, QThread
-from .SerialManger import SerialManger
+from .SerialManager import SerialManager
 import time
 from Src.DataEngine.DataEngineBase import DataEngine
 
@@ -9,7 +9,7 @@ class SerialThread(QThread):
 
     def __init__(self, parent=None, name=None):
         super().__init__(parent)
-        self.serial_manager = SerialManger()
+        self.serial_manager = SerialManager()
         self._running = False
         self.name = name
 
@@ -24,6 +24,7 @@ class SerialThread(QThread):
                     data = self.serial_manager.read_all()
                     if data:
                         # print(data.decode('utf-8',errors='ignore'),end='')
+                        print(data)
                         self.data_received.emit(data)
                     # else:
                     #     # 可以在这里取消注释来查看持续轮询的状态

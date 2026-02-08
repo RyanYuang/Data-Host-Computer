@@ -1,8 +1,9 @@
 import sys
 import threading
+import time
 from PyQt6 import QtCore
 from PyQt6.QtCore import QCoreApplication
-import Src.Serial.SerialManger as SerialManger
+import Src.Serial.SerialManager as SerialManager
 
 
 def serial_test_mode():
@@ -11,7 +12,7 @@ def serial_test_mode():
 	在主线程中只需调用 `serial_test_mode()` 即可进入交互模式。
 	"""
 	app = QCoreApplication(sys.argv)
-	sm = SerialManger.SerialManger()
+	sm = SerialManager.SerialManager()
 
 	ports = sm.GetSerialList()
 	if not ports:
@@ -44,17 +45,29 @@ def serial_test_mode():
 
 	def on_ready_read():
 		try:
-			qba = sm.readAll()
-			data = bytes(qba)
-			try:
-				text = data.decode('utf-8', errors='replace')
-			except Exception:
-				text = repr(data)
-			print(f"<-- 收到 ({len(data)} bytes): {text}")
+			data = sm.read_all()
+			if data:
+				try:
+					text = data.decode('utf-8', errors='replace')
+				except Exception:
+					text = repr(data)
+				print(f"<-- 收到 ({len(data)} bytes): {text}")
 		except Exception as e:
 			print(f"read error: {e}")
 
-	sm.readyRead.connect(on_ready_read)
+	# sm.readyRead.connect(on_ready_read) # This signal does not exist in SerialManager
+
+	# Instead of using a signal, we need a separate thread to continuously read
+	# or modify the main loop to handle reading. For simplicity in a test,
+	# we can simulate periodic checks or adapt the input thread.
+	# Given the test's structure, a dedicated reader thread would be more appropriate.
+	def reader_loop():
+		while True:
+			on_ready_read()
+			time.sleep(0.05) # Poll every 50ms
+
+	reader_thread = threading.Thread(target=reader_loop, daemon=True)
+	reader_thread.start()
 
 	class Dispatcher(QtCore.QObject):
 		send = QtCore.pyqtSignal(str)

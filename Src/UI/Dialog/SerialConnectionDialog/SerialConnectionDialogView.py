@@ -2,7 +2,7 @@ from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QIcon, QPixmap
 from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLabel, QWidget, QHBoxLayout, QPushButton
 from Src.UI.Components.ComboBoxWithTitle import ComboBoxWithTitle
-from Src.Serial.SerialManger import SerialManger
+from Src.Serial.SerialManager import SerialManager
 
 
 class SeireConnectionDialogView(QDialog):
@@ -17,7 +17,7 @@ class SeireConnectionDialogView(QDialog):
         self.resize(672, 320)
         
         # 初始化串口管理器
-        self.serial_manager = SerialManger()
+        self.serial_manager = SerialManager()
         
         # 创建定时器，每1秒刷新一次串口列表
         self.refresh_timer = QTimer(self)

@@ -35,7 +35,7 @@ The `ControlPanel` allows for remote operation of the connected device, featurin
 
 #### 3. Serial Communication
 
-The application communicates with the hardware via a serial port, managed by the `SerialManger` class.
+The application communicates with the hardware via a serial port, managed by the `SerialManager` class.
 
 *   **Implementation:** It utilizes the `PyQt6.QtSerialPort` module for robust serial communication.
 *   **Configuration:** The serial connection is configured with the following default parameters:
@@ -96,7 +96,7 @@ The project is organized into the following main directories:
 
 #### 3. 串口通信
 
-该应用程序通过串行端口与硬件通信，由 `SerialManger` 类管理。
+该应用程序通过串行端口与硬件通信，由 `SerialManager` 类管理。
 
 *   **实现:** 它利用 `PyQt6.QtSerialPort` 模块进行稳健的串行通信。
 *   **配置:** 串行连接配置了以下默认参数：

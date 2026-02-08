@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QSpacerIt
 
 from Src.MVP import BasePresenter
 from Src.Message.MessageManager import MessageManager
-from Src.Serial.SerialManger import SerialManger
+from Src.Serial.SerialManager import SerialManager
 from Src.UI.Dialog.SerialConnectionDialog.SerialConnectionDialogView import SeireConnectionDialogView
 from Src.UI.Dialog.SerialConnectionDialog.SerialConnectionDialogModel import SerialConnectionDialogModel
 from Src.UI.Dialog.SerialConnectionDialog.SerialConnectionDialogPresenter import SerialConnectionDialogPresenter
@@ -23,7 +23,7 @@ class HeadView(QWidget):
         self.SettingButton = None
         
         # 获取串口管理器的单例
-        self.serial_manager = SerialManger()
+        self.serial_manager = SerialManager()
 
         # 创建消息管理器
         self._message_manager = MessageManager()
