@@ -1,0 +1,19 @@
+{
+  "temperature": {
+    "high": 45.0,
+    "low": -10.0
+  },
+  "humidity": {
+    "high": 90.0,
+    "low": 20.0
+  },
+  "co": {
+    "danger": 50.0,
+    "warning": 30.0
+  },
+  "light": {
+    "high": 10000.0,
+    "low": 0.0
+  },
+  "sound_enabled": true
+}
