@@ -2,10 +2,10 @@ from Src.MVP.base_presenter import BasePresenter
 from Src.Message.MessageHandler import MessageHandler
 from Src.Message.Message import Message, HandleResult
 from .SerialConnectionDialogModel import SerialConnectionDialogModel
-from .SerialConnectionDialogView import SeireConnectionDialogView
+from .SerialConnectionDialogView import SerialConnectionDialogView
 
 class SerialConnectionDialogPresenter(BasePresenter,MessageHandler):
-    def __init__(self, view: SeireConnectionDialogView, model: SerialConnectionDialogModel,message_manager):
+    def __init__(self, view: SerialConnectionDialogView, model: SerialConnectionDialogModel,message_manager):
         super().__init__(view)
         self.model = model
         self.message = message_manager

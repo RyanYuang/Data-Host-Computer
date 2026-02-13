@@ -1,58 +1,56 @@
 import sys
 from PyQt6.QtWidgets import QApplication, QMainWindow
+
 from Src.Startup.StartupManager import run_startup
-from Src.UI.MainPage.MainPage import MainPage  # 修改导入方式
-from Src.UI.MainPage.MainPagePresenter import MainPagePresenter
 from Src.Manager.ThreadManager import ThreadManager
 from Src.Serial.SerialThread import SerialThread
-from Src.Serial.SerialManager import SerialManager
 from Src.DataEngine.CarDataEngine import CarDataEngine
+from Src.Message.MessageManager import MessageManager
 from Src.Message.AlertManager import AlertManager
 
+# MVP
+from Src.UI.MainPage.MainPage import MainPageView
+from Src.UI.MainPage.MainPageModel import MainPageModel
+from Src.UI.MainPage.MainPagePresenter import MainPagePresenter
+
+
 if __name__ == "__main__":
+    # ── 启动前检查（如 --serial-test） ──
     exit_code = run_startup(sys.argv)
     if exit_code is not None:
         sys.exit(exit_code)
+
     app = QApplication(sys.argv)
 
-    # 测试串口管理器是否为单例 -- Start
-    serial_manager_1 = SerialManager()
-    serial_manager_2 = SerialManager()
-    if serial_manager_1 is serial_manager_2:
-        print("串口管理器是单例")
-
-
-    # 测试串口管理器是否为单例 -- End
-
-
-    # 创建数据引擎
+    # ── 基础设施层 ──
+    message_manager = MessageManager()
     data_engine = CarDataEngine()
+    data_engine.set_message_manager(message_manager)
 
-    # 创建线程管理器
+    # ── 线程管理 ──
     thread_manager = ThreadManager()
-    # 创建串口线程
     serial_thread = SerialThread(name="SerialThread-1")
-    thread_manager.start_worker("serial_thread", serial_thread, serial_thread.start)
+    serial_thread.set_message_manager(message_manager)
     serial_thread.BindDataEngine(data_engine)
+    thread_manager.start_worker("serial_thread", serial_thread, serial_thread.start)
 
+    # ── 告警管理器 ──
+    alert_manager = AlertManager(message_manager)
 
-    # QMainWindow是PyQt6中主窗口类
+    # ── 主界面 MVP 组装 ──
     main_window = QMainWindow()
-    main_page = MainPage()  # 创建MainPage实例
-    
-    # 初始化告警管理器（必须在 main_page 之后，因为需要 MessageManager 单例）
-    alert_manager = AlertManager(main_page._message_manager)
-
-
-    # 将 MainPage 与 Presenter 绑定（MVP）- 传递 control_panel 和 message_manager
-    presenter = MainPagePresenter(
-        view=main_page,
-        control_panel=main_page.get_control_panel(),
-        message_manager=main_page._message_manager
+    main_view = MainPageView()
+    main_model = MainPageModel()
+    main_presenter = MainPagePresenter(
+        view=main_view,
+        model=main_model,
+        message_manager=message_manager,
     )
-    presenter.start()
-    main_window.setCentralWidget(main_page)  # 将MainPage设置为主窗口的中央控件
-    main_window.setWindowTitle("环境监测系统")  # 设置窗口标题
-    main_window.resize(1257, 818)  # 设置窗口大小
-    main_window.show()  # 显示窗口
+    main_presenter.start()
+
+    main_window.setCentralWidget(main_view)
+    main_window.setWindowTitle("环境监测系统")
+    main_window.resize(1257, 818)
+    main_window.show()
+
     sys.exit(app.exec())

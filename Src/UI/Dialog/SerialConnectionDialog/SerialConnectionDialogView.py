@@ -5,7 +5,7 @@ from Src.UI.Components.ComboBoxWithTitle import ComboBoxWithTitle
 from Src.Serial.SerialManager import SerialManager
 
 
-class SeireConnectionDialogView(QDialog):
+class SerialConnectionDialogView(QDialog):
     def __init__(self, parent=None):
         QDialog.__init__(self, parent)
         # 隐藏系统标题栏，但保持对话框行为

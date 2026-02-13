@@ -1,1 +1,1 @@
-# This file makes DataMonitor a Python package
+# This file makes ControlPanel a Python package

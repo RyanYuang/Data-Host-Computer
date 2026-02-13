@@ -1,56 +1,28 @@
-import PyQt6
-from PIL.ImageQt import QPixmap
-from PyQt6.QtCore import QSize 
-from PyQt6.QtGui import QFont,QIcon
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QSpacerItem, QSizePolicy ,QHBoxLayout
+from PyQt6.QtCore import QSize, pyqtSignal
+from PyQt6.QtGui import QFont, QIcon
+from PyQt6.QtWidgets import QLabel, QPushButton, QHBoxLayout
 
-from Src.MVP import BasePresenter
-from Src.Message.MessageManager import MessageManager
-from Src.Serial.SerialManager import SerialManager
-from Src.UI.Dialog.SerialConnectionDialog.SerialConnectionDialogView import SeireConnectionDialogView
-from Src.UI.Dialog.SerialConnectionDialog.SerialConnectionDialogModel import SerialConnectionDialogModel
-from Src.UI.Dialog.SerialConnectionDialog.SerialConnectionDialogPresenter import SerialConnectionDialogPresenter
+from Src.MVP.base_view import BaseView
 
 
-class HeadView(QWidget):
+class HeadView(BaseView):
+    """
+    头部视图层 —— 纯 UI
+    通过信号将用户操作转发给 Presenter
+    """
+    # ── 信号定义 ──
+    connect_btn_clicked = pyqtSignal()
+    alarm_btn_clicked = pyqtSignal(bool)   # 参数: isChecked
+    setting_btn_clicked = pyqtSignal()
+
     def __init__(self, parent=None):
-        super(QWidget, self).__init__(parent)
-        # 定义组件
-        self.layout = None
-        self.TitleLabel = None
-        self.ConnectButton = None
-        self.AlarmButton = None
-        self.SettingButton = None
-        
-        # 获取串口管理器的单例
-        self.serial_manager = SerialManager()
+        super().__init__(parent)
+        self.TitleLabel: QLabel = None
+        self.ConnectButton: QPushButton = None
+        self.AlarmButton: QPushButton = None
+        self.SettingButton: QPushButton = None
 
-        # 获取消息管理器的单例
-        self._message_manager = MessageManager()
-
-        self.InitUI()
-
-    def set_presenter(self,Presenter: BasePresenter):
-        self.Presenter = Presenter
-
-    def InitUI(self):
-        """
-        @brief 初始化UI
-        :return:
-        """
-        # 创建标签
-        self.TitleLabel = QLabel(self)
-        self.TitleLabel.setText("环境监测控制系统")
-        Font = QFont()
-        Font.setBold(True)
-        Font.setPointSize(30)
-        self.TitleLabel.setFont(Font)
-        self.TitleLabel.setStyleSheet("""
-            color: rgb(0, 0, 0);
-            """)
-
-        # 创建按钮
-        self.ConnectButton = QPushButton("连接", self)
+        # 样式预设
         self._connect_btn_default_style = """
             Color:rgb(193,0,7);
             background-color: rgb(255,226,226);
@@ -65,14 +37,41 @@ class HeadView(QWidget):
             width: 125px;
             height: 40px;
         """
-        self.ConnectButton.setStyleSheet(self._connect_btn_default_style)
-        self.ConnectButton.clicked.connect(self.open_connection_dialog)
 
+        self._init_ui()
+
+    # ── 由 Presenter 调用的 UI 更新接口 ──
+    def update_connection_status(self, connected: bool):
+        """更新连接按钮的显示状态"""
+        if connected:
+            self.ConnectButton.setText("已连接")
+            self.ConnectButton.setStyleSheet(self._connect_btn_connected_style)
+        else:
+            self.ConnectButton.setText("连接")
+            self.ConnectButton.setStyleSheet(self._connect_btn_default_style)
+
+    # ── UI 初始化 ──
+    def _init_ui(self):
+        # 标题
+        self.TitleLabel = QLabel(self)
+        self.TitleLabel.setText("环境监测控制系统")
+        font = QFont()
+        font.setBold(True)
+        font.setPointSize(30)
+        self.TitleLabel.setFont(font)
+        self.TitleLabel.setStyleSheet("color: rgb(0, 0, 0);")
+
+        # 连接按钮
+        self.ConnectButton = QPushButton("连接", self)
+        self.ConnectButton.setStyleSheet(self._connect_btn_default_style)
+        self.ConnectButton.clicked.connect(self.connect_btn_clicked.emit)
+
+        # 告警按钮
         self.AlarmButton = QPushButton("正常", self)
-        AlarmIcon = QIcon()
-        AlarmIcon.addFile("Resource/AlarmNormal.png",state=QIcon.State.Off)
-        AlarmIcon.addFile("Resource/AlarmTrigger.png",state=QIcon.State.On)
-        self.AlarmButton.setIcon(AlarmIcon)
+        alarm_icon = QIcon()
+        alarm_icon.addFile("Resource/AlarmNormal.png", state=QIcon.State.Off)
+        alarm_icon.addFile("Resource/AlarmTrigger.png", state=QIcon.State.On)
+        self.AlarmButton.setIcon(alarm_icon)
         self.AlarmButton.setStyleSheet("""
             QPushButton {
                 border-radius: 10px;
@@ -81,81 +80,37 @@ class HeadView(QWidget):
             }
             QPushButton:checked {
                 color: rgb(193,0,7);
-                background-color: rgb(255, 226, 226); /* 按下时显示红色背景 */
+                background-color: rgb(255, 226, 226);
             }
-            QPushButton:!checked 
-            {
+            QPushButton:!checked {
                 color: rgb(74,85,101);
                 background-color: rgb(243,244,246);
             }
         """)
         self.AlarmButton.setCheckable(True)
-
-        SettingIcon = QIcon("Resource/SettingIcon.png")
-        self.SettingButton = QPushButton(self)
-        self.SettingButton.setIcon(SettingIcon)
-        self.SettingButton.setStyleSheet("""
-        QPushButton {
-            width: 44px;
-            height: 44px;
-            border-radius: 10px;
-            background-color: rgb(255,255,255);
-        }
-        """)
-
-        # 创建布局
-        self.layout = QHBoxLayout()
-        
-        # 添加标题
-        self.layout.addWidget(self.TitleLabel)
-        
-        # 添加弹性空间，使按钮靠底部
-        self.layout.addStretch()  # 或者使用这个简单的伸缩器
-        
-        # 添加按钮
-        self.layout.addWidget(self.ConnectButton)
-        self.layout.addWidget(self.AlarmButton)
-        self.layout.addWidget(self.SettingButton)
-        
-        # 设置布局
-        self.setLayout(self.layout)
-
-    def open_connection_dialog(self):
-        # 创建并显示对话框
-        connection_dialog = SeireConnectionDialogView(self)
-        connection_dialog_model = SerialConnectionDialogModel()
-        connection_dialog_presenter = SerialConnectionDialogPresenter(
-            connection_dialog, 
-            connection_dialog_model, 
-            self._message_manager
+        self.AlarmButton.clicked.connect(
+            lambda: self.alarm_btn_clicked.emit(self.AlarmButton.isChecked())
         )
-        connection_dialog.exec()
-        
-        # 对话框关闭后，检查单例管理器的状态
-        if self.serial_manager.GetSerialStatus():
-            self.update_ui_to_connected()
-        
-    def disconnect_serial(self):
-        """断开当前串口连接并恢复按钮状态"""
-        self.serial_manager.ClosePort()
-        self.update_ui_to_disconnected()
 
-    def update_ui_to_connected(self):
-        """更新UI为已连接状态"""
-        self.ConnectButton.setText("已连接")
-        self.ConnectButton.setStyleSheet(self._connect_btn_connected_style)
-        try:
-            self.ConnectButton.clicked.disconnect()
-        except TypeError:
-            pass  # 如果没有连接的槽，会引发TypeError
-        self.ConnectButton.clicked.connect(self.disconnect_serial)
+        # 设置按钮
+        setting_icon = QIcon("Resource/SettingIcon.png")
+        self.SettingButton = QPushButton(self)
+        self.SettingButton.setIcon(setting_icon)
+        self.SettingButton.setStyleSheet("""
+            QPushButton {
+                width: 44px;
+                height: 44px;
+                border-radius: 10px;
+                background-color: rgb(255,255,255);
+            }
+        """)
+        self.SettingButton.clicked.connect(self.setting_btn_clicked.emit)
 
-    def update_ui_to_disconnected(self):
-        """更新UI为已断开状态"""
-        self.ConnectButton.setText("连接")
-        self.ConnectButton.setStyleSheet(self._connect_btn_default_style)
-        try:
-            self.ConnectButton.clicked.disconnect()
-        except TypeError:
-            pass
-        self.ConnectButton.clicked.connect(self.open_connection_dialog)
+        # 布局
+        layout = QHBoxLayout()
+        layout.addWidget(self.TitleLabel)
+        layout.addStretch()
+        layout.addWidget(self.ConnectButton)
+        layout.addWidget(self.AlarmButton)
+        layout.addWidget(self.SettingButton)
+        self.setLayout(layout)
