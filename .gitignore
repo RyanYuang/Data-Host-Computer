@@ -9,3 +9,5 @@ __pycache__/
 extensions.json
 settings.json
 launch.json
+# macOS
+.DS_Store
