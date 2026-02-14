@@ -181,36 +181,8 @@ class AlertThresholdPresenter(BasePresenter, MessageHandler):
 
             return HandleResult.CONSUMED
 
-        # 处理传感器数据更新，检查是否触发告警
-        if message.type == "sensor.data.updated":
-            data = message.payload
-            
-            # 获取当前传感器数据
-            temperature = data.get("temperature", 0)
-            humidity = data.get("humidity", 0)
-            co_level = data.get("co", 0)
-            light = data.get("light", 0)
-            
-            # 检查告警
-            result = self._model.check_alerts(temperature, humidity, co_level, light)
-            
-            if result["count"] > 0:
-                # 有告警，发送告警消息
-                for alert in result["alerts"]:
-                    self._message_manager.dispatch(
-                        Message("alert.triggered", alert)
-                    )
-                    
-                    # 如果启用声音告警
-                    if self._model.sound_enabled and alert["level"] in ["danger", "warning"]:
-                        self._message_manager.dispatch(
-                            Message("alert.sound.play", {"level": alert["level"]})
-                        )
-            
-            return HandleResult.CONSUMED
-        
         # 处理获取当前阈值配置的请求
-        elif message.type == "alert.config.get":
+        if message.type == "alert.config.get":
             self._message_manager.dispatch(
                 Message("alert.config.response", self._model.to_dict())
             )

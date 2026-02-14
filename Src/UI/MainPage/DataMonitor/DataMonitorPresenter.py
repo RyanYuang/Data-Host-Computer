@@ -60,11 +60,5 @@ class DataMonitorPresenter(BasePresenter, MessageHandler):
         #     # self.update_single_value(index, data.value)
         #     return HandleResult.HANDLED
         
-        # 处理传感器数据更新，转发给告警系统
-        if message.type == "sensor.data.updated":
-            # 转发给告警系统检查
-            self._message_manager.dispatch(message)
-            return HandleResult.CONSUMED
-
-        # By default, continue processing
+        # 不处理其他消息，继续传递
         return HandleResult.CONTINUE

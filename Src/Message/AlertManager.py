@@ -4,6 +4,7 @@ from PyQt6.QtGui import QIcon, QAction
 from Src.Message.MessageHandler import MessageHandler
 from Src.Message.Message import Message, HandleResult
 from Src.Message.MessageManager import MessageManager
+from Src.UI.Dialog.AlertThresholdDialog.AlertThresholdModel import AlertThresholdModel
 import os
 import subprocess
 import platform
@@ -12,6 +13,7 @@ import platform
 class AlertManager(MessageHandler):
     """
     告警管理器 - 集中处理所有告警通知
+    常驻实例，在应用启动时创建，持续监听传感器数据并检查阈值告警。
     """
     _instance = None
     
@@ -31,6 +33,11 @@ class AlertManager(MessageHandler):
         self._alert_count = 0
         self._sound_files = {}  # 存储声音文件路径
         self._system = platform.system()  # 获取系统类型
+        
+        # ── 加载告警阈值配置（常驻） ──
+        self._threshold_model = AlertThresholdModel()
+        self._threshold_model.load_from_file()
+        print(f"[AlertManager] 已加载告警阈值: 温度 {self._threshold_model.temp_low}~{self._threshold_model.temp_high}°C")
         
         # 初始化声音
         self._init_sounds()
@@ -64,6 +71,49 @@ class AlertManager(MessageHandler):
     
     def handle(self, message: Message) -> HandleResult:
         """处理告警消息"""
+        # ── 核心：监听传感器数据，实时检查阈值 ──
+        if message.type == "sensor.data.updated":
+            data = message.payload
+            temperature = data.get("temperature", 0)
+            humidity = data.get("humidity", 0)
+            co_level = data.get("co", 0)
+            light = data.get("light", 0)
+            
+            # 使用常驻的阈值模型检查告警
+            result = self._threshold_model.check_alerts(
+                temperature, humidity, co_level, light
+            )
+            
+            if result["count"] > 0:
+                for alert in result["alerts"]:
+                    alert_type = alert.get("type", "unknown")
+                    level = alert.get("level", "info")
+                    alert_msg = alert.get("message", "")
+                    
+                    # 避免重复弹窗：同类告警只弹一次，清除后才能再弹
+                    if alert_type not in self._current_alerts:
+                        self._current_alerts.add(alert_type)
+                        self._alert_count += 1
+                        self._show_alert(level, alert_msg)
+                        
+                        # 播放告警声音
+                        if self._threshold_model.sound_enabled and level in ["danger", "warning"]:
+                            self._play_alert_sound(level)
+            else:
+                # 所有数据正常，清除活跃告警
+                if self._current_alerts:
+                    self._current_alerts.clear()
+            
+            return HandleResult.CONTINUE  # 不消费，让其他 handler 也可以处理
+        
+        # ── 阈值配置更新（由 AlertThresholdPresenter 保存后触发） ──
+        if message.type == "alert.config.updated":
+            config = message.payload
+            if config:
+                self._update_threshold_from_dict(config)
+                print(f"[AlertManager] 阈值已更新: 温度 {self._threshold_model.temp_low}~{self._threshold_model.temp_high}°C")
+            return HandleResult.CONTINUE
+
         if message.type == "alert.triggered":
             alert = message.payload
             alert_type = alert.get("type", "unknown")
@@ -110,6 +160,23 @@ class AlertManager(MessageHandler):
             
         return HandleResult.SKIP
     
+    def _update_threshold_from_dict(self, config: dict):
+        """从配置字典更新阈值模型"""
+        if "temperature" in config:
+            self._threshold_model.temp_high = config["temperature"].get("high", self._threshold_model.temp_high)
+            self._threshold_model.temp_low = config["temperature"].get("low", self._threshold_model.temp_low)
+        if "humidity" in config:
+            self._threshold_model.humidity_high = config["humidity"].get("high", self._threshold_model.humidity_high)
+            self._threshold_model.humidity_low = config["humidity"].get("low", self._threshold_model.humidity_low)
+        if "co" in config:
+            self._threshold_model.co_danger = config["co"].get("danger", self._threshold_model.co_danger)
+            self._threshold_model.co_warning = config["co"].get("warning", self._threshold_model.co_warning)
+        if "light" in config:
+            self._threshold_model.light_high = config["light"].get("high", self._threshold_model.light_high)
+            self._threshold_model.light_low = config["light"].get("low", self._threshold_model.light_low)
+        if "sound_enabled" in config:
+            self._threshold_model.sound_enabled = config["sound_enabled"]
+
     def _show_alert(self, level: str, message: str):
         """显示告警通知"""
         # 根据级别设置图标
