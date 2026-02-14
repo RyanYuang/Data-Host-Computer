@@ -10,9 +10,10 @@ class AlertThresholdView(QDialog):
     告警阈值设置视图 - 提供阈值配置界面
     """
     # 定义信号
-    saveClicked = pyqtSignal(dict)  # 保存按钮点击信号
-    cancelClicked = pyqtSignal()    # 取消按钮点击信号
-    testSoundClicked = pyqtSignal()  # 测试声音按钮点击信号
+    saveClicked = pyqtSignal(dict)      # 保存按钮点击信号
+    cancelClicked = pyqtSignal()        # 取消按钮点击信号
+    testSoundClicked = pyqtSignal()     # 测试声音按钮点击信号
+    syncClicked = pyqtSignal(dict)      # 同步到设备按钮点击信号
     
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -49,7 +50,26 @@ class AlertThresholdView(QDialog):
         # 按钮区域
         button_layout = QHBoxLayout()
         button_layout.addStretch()
-        
+
+        # 同步到设备按钮
+        self._sync_btn = QPushButton("📡 同步到设备")
+        self._sync_btn.setStyleSheet("""
+            QPushButton {
+                background-color: rgb(21, 93, 252);
+                color: white;
+                border-radius: 6px;
+                padding: 6px 16px;
+            }
+            QPushButton:hover {
+                background-color: rgb(17, 75, 202);
+            }
+            QPushButton:disabled {
+                background-color: rgb(180, 180, 180);
+            }
+        """)
+        self._sync_btn.clicked.connect(self._onSyncClicked)
+        button_layout.addWidget(self._sync_btn)
+
         # 恢复默认按钮
         default_btn = QPushButton("恢复默认")
         default_btn.clicked.connect(self._onDefaultClicked)
@@ -249,3 +269,82 @@ class AlertThresholdView(QDialog):
     def _onTestSoundClicked(self):
         """测试声音按钮点击"""
         self.testSoundClicked.emit()
+
+    def _onSyncClicked(self):
+        """同步到设备按钮点击"""
+        values = self.get_values()
+        self.syncClicked.emit(values)
+
+    def show_sync_result(self, status: str, detail: str = ""):
+        """
+        显示同步结果反馈（由 Presenter 调用）。
+
+        :param status: "waiting" | "success" | "error" | "timeout"
+        :param detail: 附加说明文字
+        """
+        _styles = {
+            "waiting": ("⏳ 同步中…", """
+                QPushButton {
+                    background-color: rgb(245, 158, 11);
+                    color: white;
+                    border-radius: 6px;
+                    padding: 6px 16px;
+                }
+            """),
+            "success": ("✅ 已同步", """
+                QPushButton {
+                    background-color: rgb(22, 163, 74);
+                    color: white;
+                    border-radius: 6px;
+                    padding: 6px 16px;
+                }
+            """),
+            "error": ("❌ 同步失败", """
+                QPushButton {
+                    background-color: rgb(220, 38, 38);
+                    color: white;
+                    border-radius: 6px;
+                    padding: 6px 16px;
+                }
+            """),
+            "timeout": ("⚠️ 设备无响应", """
+                QPushButton {
+                    background-color: rgb(234, 88, 12);
+                    color: white;
+                    border-radius: 6px;
+                    padding: 6px 16px;
+                }
+            """),
+        }
+
+        text, style = _styles.get(status, _styles["error"])
+        self._sync_btn.setText(text)
+        self._sync_btn.setStyleSheet(style)
+        self._sync_btn.setEnabled(status != "waiting")   # 等待中禁用按钮
+
+        if detail:
+            self._sync_btn.setToolTip(detail)
+            print(f"[AlertThresholdView] 同步状态={status}: {detail}")
+
+        # 非等待状态 → 3 秒后恢复按钮原样
+        if status != "waiting":
+            from PyQt6.QtCore import QTimer
+            QTimer.singleShot(3000, self._resetSyncBtn)
+
+    def _resetSyncBtn(self):
+        """恢复同步按钮原始样式"""
+        self._sync_btn.setText("📡 同步到设备")
+        self._sync_btn.setStyleSheet("""
+            QPushButton {
+                background-color: rgb(21, 93, 252);
+                color: white;
+                border-radius: 6px;
+                padding: 6px 16px;
+            }
+            QPushButton:hover {
+                background-color: rgb(17, 75, 202);
+            }
+            QPushButton:disabled {
+                background-color: rgb(180, 180, 180);
+            }
+        """)

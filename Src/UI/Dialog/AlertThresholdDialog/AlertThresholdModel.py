@@ -107,6 +107,28 @@ class AlertThresholdModel:
             print(f"保存告警配置失败: {e}")
             return False
     
+    def build_sync_command(self) -> bytes:
+        """
+        构建同步阈值到下位机的串口指令。
+
+        协议格式:
+            #T<temp_low>,<temp_high>,H<hum_low>,<hum_high>,G<co_warn>,<co_danger>,L<light_low>,<light_high>\r\n
+
+        示例:
+            #T-10.0,45.0,H20.0,90.0,G30.0,50.0,L0.0,10000.0\r\n
+
+        以 '#' 开头与上行数据 '@' 区分，字母前缀标识数据类别，
+        下位机按同样规则解析即可。
+        """
+        cmd = (
+            f"#T{self.temp_low},{self.temp_high},"
+            f"H{self.humidity_low},{self.humidity_high},"
+            f"G{self.co_warning},{self.co_danger},"
+            f"L{self.light_low},{self.light_high}"
+            f"\r\n"
+        )
+        return cmd.encode("ascii")
+
     def check_alerts(self, temperature: float, humidity: float, 
                     co_level: float, light: float) -> Dict[str, list]:
         """

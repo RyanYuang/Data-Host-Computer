@@ -40,9 +40,28 @@ class SerialThread(QThread):
                         
                         # 发送原始数据消息（供其他模块使用）
                         if self._message_manager:
+                            decoded = data.decode('utf-8', errors='ignore').strip()
                             self._message_manager.dispatch(
-                                Message("serial.data.raw", {"data": data.decode('utf-8', errors='ignore').strip()})
+                                Message("serial.data.raw", {"data": decoded})
                             )
+
+                            # ── 检测阈值配置反馈帧 ──
+                            for line in decoded.splitlines():
+                                line = line.strip()
+                                if line.startswith("#OK:"):
+                                    self._message_manager.dispatch(
+                                        Message("serial.config.response", {
+                                            "success": True,
+                                            "detail": line[4:]   # 去掉 "#OK:" 前缀
+                                        })
+                                    )
+                                elif line.startswith("#ERR:"):
+                                    self._message_manager.dispatch(
+                                        Message("serial.config.response", {
+                                            "success": False,
+                                            "detail": line[5:]   # 去掉 "#ERR:" 前缀
+                                        })
+                                    )
                     # else:
                     #     # 可以在这里取消注释来查看持续轮询的状态
                     #     print("串口线程: 串口已连接，但无数据")
