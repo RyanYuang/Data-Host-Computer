@@ -51,6 +51,45 @@ class HeadView(BaseView):
             self.ConnectButton.setText("连接")
             self.ConnectButton.setStyleSheet(self._connect_btn_default_style)
 
+    def update_alarm_status(self, has_alert: bool, alert_count: int = 0):
+        """
+        更新告警按钮的显示状态。
+        
+        :param has_alert: 当前是否存在活跃告警
+        :param alert_count: 活跃告警数量
+        """
+        if has_alert:
+            self.AlarmButton.setChecked(True)
+            self.AlarmButton.setText(f"告警({alert_count})")
+            self.AlarmButton.setStyleSheet("""
+                QPushButton {
+                    border-radius: 10px;
+                    height: 40px;
+                    width: 92px;
+                    color: rgb(255, 255, 255);
+                    background-color: rgb(220, 38, 38);
+                    font-weight: bold;
+                }
+            """)
+        else:
+            self.AlarmButton.setChecked(False)
+            self.AlarmButton.setText("正常")
+            self.AlarmButton.setStyleSheet("""
+                QPushButton {
+                    border-radius: 10px;
+                    height: 40px;
+                    width: 92px;
+                }
+                QPushButton:checked {
+                    color: rgb(193,0,7);
+                    background-color: rgb(255, 226, 226);
+                }
+                QPushButton:!checked {
+                    color: rgb(74,85,101);
+                    background-color: rgb(243,244,246);
+                }
+            """)
+
     # ── UI 初始化 ──
     def _init_ui(self):
         # 标题

@@ -85,6 +85,7 @@ class AlertManager(MessageHandler):
             )
             
             if result["count"] > 0:
+                new_alerts_triggered = False
                 for alert in result["alerts"]:
                     alert_type = alert.get("type", "unknown")
                     level = alert.get("level", "info")
@@ -94,15 +95,32 @@ class AlertManager(MessageHandler):
                     if alert_type not in self._current_alerts:
                         self._current_alerts.add(alert_type)
                         self._alert_count += 1
+                        new_alerts_triggered = True
                         self._show_alert(level, alert_msg)
                         
                         # 播放告警声音
                         if self._threshold_model.sound_enabled and level in ["danger", "warning"]:
                             self._play_alert_sound(level)
+                
+                # 有新告警触发时，通知 UI 更新按钮状态
+                if new_alerts_triggered:
+                    self._message_manager.dispatch(
+                        Message("alert.status.changed", {
+                            "has_alert": True,
+                            "alert_count": len(self._current_alerts),
+                        })
+                    )
             else:
                 # 所有数据正常，清除活跃告警
                 if self._current_alerts:
                     self._current_alerts.clear()
+                    # 告警恢复，通知 UI 更新按钮状态
+                    self._message_manager.dispatch(
+                        Message("alert.status.changed", {
+                            "has_alert": False,
+                            "alert_count": 0,
+                        })
+                    )
             
             return HandleResult.CONTINUE  # 不消费，让其他 handler 也可以处理
         

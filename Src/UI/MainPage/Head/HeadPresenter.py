@@ -93,4 +93,12 @@ class HeadPresenter(BasePresenter, MessageHandler):
             self._model.available_ports = message.payload
             return HandleResult.CONSUMED
 
+        # ── 告警状态变化 → 更新告警按钮外观 ──
+        if message.type == "alert.status.changed":
+            has_alert = message.payload.get("has_alert", False)
+            alert_count = message.payload.get("alert_count", 0)
+            self._model.is_alarm_triggered = has_alert
+            self._view.update_alarm_status(has_alert, alert_count)
+            return HandleResult.CONTINUE
+
         return HandleResult.SKIP
