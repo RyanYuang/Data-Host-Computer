@@ -36,7 +36,12 @@ class DataMonitorPresenter(BasePresenter, MessageHandler):
     def refresh_all_values(self, datapack):
         """
         Refreshes all values in the view with current data from the model.
+        仅接受包含 4 个数值的列表，其他类型一律忽略。
         """
+        # 防御性校验：必须是 list 且长度 == 4
+        if not isinstance(datapack, list) or len(datapack) != 4:
+            return
+
         for i in range(len(datapack)):
             self._view.update_value_at(i, datapack[i])
 
