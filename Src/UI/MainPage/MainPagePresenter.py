@@ -13,6 +13,8 @@ from .DataMonitor.DataMonitorModel import DataMonitorModel
 from .DataMonitor.DataMonitorPresenter import DataMonitorPresenter
 from .ControlPanel.ControlPanelModel import ControlPanelModel
 from .ControlPanel.ControlPanelPresenter import ControlPanelPresenter
+from .SerialConsole.SerialConsoleModel import SerialConsoleModel
+from .SerialConsole.SerialConsolePresenter import SerialConsolePresenter
 
 
 class MainPagePresenter(BasePresenter, MessageHandler):
@@ -51,6 +53,17 @@ class MainPagePresenter(BasePresenter, MessageHandler):
             model=control_panel_model,
             message_manager=self._message_manager,
         )
+
+        # SerialConsole
+        serial_console_model = SerialConsoleModel()
+        self._serial_console_presenter = SerialConsolePresenter(
+            view=view.serial_console_view,
+            model=serial_console_model,
+            message_manager=self._message_manager,
+        )
+
+        # 连接 HeadView 的控制台开关信号 → MainPageView 的侧栏切换
+        view.head_view.console_btn_clicked.connect(view.toggle_serial_console)
 
         # 注册自身为消息处理器
         self._message_manager.register(self)

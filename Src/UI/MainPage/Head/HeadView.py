@@ -14,6 +14,7 @@ class HeadView(BaseView):
     connect_btn_clicked = pyqtSignal()
     alarm_btn_clicked = pyqtSignal(bool)   # 参数: isChecked
     setting_btn_clicked = pyqtSignal()
+    console_btn_clicked = pyqtSignal()     # 串口控制台开关
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -106,11 +107,30 @@ class HeadView(BaseView):
         """)
         self.SettingButton.clicked.connect(self.setting_btn_clicked.emit)
 
+        # 串口控制台按钮
+        self.ConsoleButton = QPushButton("📟", self)
+        self.ConsoleButton.setToolTip("串口监视器")
+        self.ConsoleButton.setCheckable(True)
+        self.ConsoleButton.setStyleSheet("""
+            QPushButton {
+                width: 44px;
+                height: 44px;
+                border-radius: 10px;
+                background-color: rgb(255,255,255);
+                font-size: 20px;
+            }
+            QPushButton:checked {
+                background-color: rgb(21, 93, 252);
+            }
+        """)
+        self.ConsoleButton.clicked.connect(self.console_btn_clicked.emit)
+
         # 布局
         layout = QHBoxLayout()
         layout.addWidget(self.TitleLabel)
         layout.addStretch()
         layout.addWidget(self.ConnectButton)
         layout.addWidget(self.AlarmButton)
+        layout.addWidget(self.ConsoleButton)
         layout.addWidget(self.SettingButton)
         self.setLayout(layout)

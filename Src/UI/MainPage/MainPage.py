@@ -1,11 +1,12 @@
-from PyQt6.QtWidgets import QWidget, QVBoxLayout
-from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout
+from PyQt6.QtCore import Qt, QPropertyAnimation, QEasingCurve
 from PyQt6.QtGui import QPalette, QColor
 
 from Src.MVP.base_view import BaseView
 from .Head.HeadView import HeadView
 from .DataMonitor.DataMonitorView import DataMonitorView
 from .ControlPanel.ControlPanelView import ControlPanelView
+from .SerialConsole.SerialConsoleView import SerialConsoleView
 
 
 class MainPageView(BaseView):
@@ -19,6 +20,7 @@ class MainPageView(BaseView):
         self._head_view: HeadView = None
         self._data_monitor_view: DataMonitorView = None
         self._control_panel_view: ControlPanelView = None
+        self._serial_console_view: SerialConsoleView = None
 
         self._init_ui()
 
@@ -34,6 +36,19 @@ class MainPageView(BaseView):
     @property
     def control_panel_view(self) -> ControlPanelView:
         return self._control_panel_view
+
+    @property
+    def serial_console_view(self) -> SerialConsoleView:
+        return self._serial_console_view
+
+    # ── 侧栏开关 ──
+    def toggle_serial_console(self):
+        """切换串口控制台侧栏的展开/收起"""
+        console = self._serial_console_view
+        if console.isVisible():
+            console.hide()
+        else:
+            console.show()
 
     # ── UI 初始化 ──
     def _init_ui(self):
@@ -54,10 +69,23 @@ class MainPageView(BaseView):
         self._control_panel_view = ControlPanelView(self)
         self._control_panel_view.setMinimumSize(1225, 454)
 
-        # 布局
-        layout = QVBoxLayout()
-        layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-        layout.addWidget(self._head_view)
-        layout.addWidget(self._data_monitor_view)
-        layout.addWidget(self._control_panel_view)
-        self.setLayout(layout)
+        # 串口控制台侧栏（默认隐藏）
+        self._serial_console_view = SerialConsoleView(self)
+        self._serial_console_view.hide()
+
+        # ── 左侧主内容区 ──
+        left_panel = QWidget()
+        left_layout = QVBoxLayout(left_panel)
+        left_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        left_layout.setContentsMargins(0, 0, 0, 0)
+        left_layout.addWidget(self._head_view)
+        left_layout.addWidget(self._data_monitor_view)
+        left_layout.addWidget(self._control_panel_view)
+
+        # ── 水平布局：主内容 + 侧栏 ──
+        root_layout = QHBoxLayout()
+        root_layout.setContentsMargins(0, 0, 0, 0)
+        root_layout.setSpacing(0)
+        root_layout.addWidget(left_panel, 1)                # 主内容占满剩余空间
+        root_layout.addWidget(self._serial_console_view, 0) # 侧栏固定宽度
+        self.setLayout(root_layout)
