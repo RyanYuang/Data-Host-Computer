@@ -53,12 +53,28 @@ class DataMonitorPresenter(BasePresenter, MessageHandler):
         
         For example, a message might contain new sensor data.
         """
-        # Example:
-        # if message.type == "SENSOR_DATA_UPDATE":
-        #     data = message.data 
-        #     # find index for data.name
-        #     # self.update_single_value(index, data.value)
-        #     return HandleResult.HANDLED
+        # 处理传感器告警状态消息
+        if message.type == "sensor.alert.status":
+            alert_types = message.payload.get("alert_types", [])
+            
+            # 数据类型到索引的映射（对应温度、湿度、CO、光照）
+            type_to_index = {
+                "temperature": 0,
+                "humidity": 1,
+                "co": 2,
+                "light": 3
+            }
+            
+            # 首先停止所有闪烁
+            self._view.stop_all_blink()
+            
+            # 对于超阈值的数据，开始闪烁
+            for alert_type in alert_types:
+                if alert_type in type_to_index:
+                    index = type_to_index[alert_type]
+                    self._view.start_blink(index)
+            
+            return HandleResult.CONTINUE
         
         # 不处理其他消息，继续传递
         return HandleResult.CONTINUE

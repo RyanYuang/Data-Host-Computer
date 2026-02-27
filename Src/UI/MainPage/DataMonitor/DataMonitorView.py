@@ -8,6 +8,8 @@ class DataMonitorView(BaseView):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.data_widgets = []  # To store references to the data value labels
+        self.item_widgets = []  # To store references to the item container widgets
+        self._blink_timers = {}  # QTimer for each blinking item
 
     def init_ui(self, data_items):
         """
@@ -67,6 +69,8 @@ class DataMonitorView(BaseView):
             item_layout.addWidget(data_label)
             item_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
 
+            # Store reference to item widget for background color changes
+            self.item_widgets.append(item_widget)
             container_layout.addWidget(item_widget)
 
         layout.addWidget(container)
@@ -78,6 +82,51 @@ class DataMonitorView(BaseView):
             self.data_widgets[index].setText(str(value))
         else:
             print(f"Error: View tried to update widget at invalid index {index}")
+    
+    def start_blink(self, index: int):
+        """开始闪烁指定索引的数据项背景"""
+        if not (0 <= index < len(self.item_widgets)):
+            return
+        
+        # 如果已经在闪烁，不重复创建定时器
+        if index in self._blink_timers:
+            return
+        
+        from PyQt6.QtCore import QTimer
+        item_widget = self.item_widgets[index]
+        
+        # 闪烁状态
+        blink_state = {'is_red': False}
+        
+        def toggle_color():
+            if blink_state['is_red']:
+                # 恢复正常白色背景
+                item_widget.setStyleSheet("background-color: rgb(255, 255, 255); border-radius: 16px;")
+            else:
+                # 红色背景
+                item_widget.setStyleSheet("background-color: rgb(255, 100, 100); border-radius: 16px;")
+            blink_state['is_red'] = not blink_state['is_red']
+        
+        # 创建定时器，每500ms切换一次颜色
+        timer = QTimer(self)
+        timer.timeout.connect(toggle_color)
+        timer.start(500)
+        self._blink_timers[index] = timer
+    
+    def stop_blink(self, index: int):
+        """停止闪烁并恢复正常背景"""
+        if index in self._blink_timers:
+            self._blink_timers[index].stop()
+            del self._blink_timers[index]
+        
+        if 0 <= index < len(self.item_widgets):
+            # 恢复正常白色背景
+            self.item_widgets[index].setStyleSheet("background-color: rgb(255, 255, 255); border-radius: 16px;")
+    
+    def stop_all_blink(self):
+        """停止所有闪烁"""
+        for index in list(self._blink_timers.keys()):
+            self.stop_blink(index)
 
     @property
     def presenter(self):

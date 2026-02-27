@@ -40,7 +40,7 @@ class MessageManager:
         """
         Dispatches a message to all registered handlers until it is consumed.
         """
-        print(f"[MessageManager] 分发消息: {message.type}, 接收者数量: {len(self._handlers)}")
+        # print(f"[MessageManager] 分发消息: {message.type}, 接收者数量: {len(self._handlers)}")
         for handler in self._handlers:
             if message.consumed:
                 break

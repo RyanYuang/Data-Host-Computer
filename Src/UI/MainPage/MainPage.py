@@ -1,6 +1,6 @@
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout
 from PyQt6.QtCore import Qt, QPropertyAnimation, QEasingCurve
-from PyQt6.QtGui import QPalette, QColor
+from PyQt6.QtGui import QPalette, QColor, QKeyEvent
 
 from Src.MVP.base_view import BaseView
 from .Head.HeadView import HeadView
@@ -21,6 +21,7 @@ class MainPageView(BaseView):
         self._data_monitor_view: DataMonitorView = None
         self._control_panel_view: ControlPanelView = None
         self._serial_console_view: SerialConsoleView = None
+        self._presenter = None  # Presenter 引用
 
         self._init_ui()
 
@@ -89,3 +90,73 @@ class MainPageView(BaseView):
         root_layout.addWidget(left_panel, 1)                # 主内容占满剩余空间
         root_layout.addWidget(self._serial_console_view, 0) # 侧栏固定宽度
         self.setLayout(root_layout)
+        
+        # 启用键盘焦点
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+    
+    def keyPressEvent(self, event: QKeyEvent):
+        """处理键盘按下事件"""
+        key = event.key()
+        
+        # 防止重复触发（按住键时）
+        if event.isAutoRepeat():
+            return
+        
+        # 获取方向控制面板的 presenter
+        if hasattr(self, '_presenter') and self._presenter:
+            direction_presenter = self._presenter.get_direction_presenter()
+            direction_view = self._control_panel_view.direction_control_panel_view
+            
+            if direction_presenter and direction_view:
+                key_map = {
+                    Qt.Key.Key_Up: 'up',
+                    Qt.Key.Key_Down: 'down',
+                    Qt.Key.Key_Left: 'left',
+                    Qt.Key.Key_Right: 'right',
+                    Qt.Key.Key_Space: 'stop'
+                }
+                
+                if key in key_map:
+                    command = key_map[key]
+                    direction_view.simulate_button_press(command)
+                    direction_presenter.send_command(command)
+                    event.accept()
+                    return
+        
+        super().keyPressEvent(event)
+    
+    def keyReleaseEvent(self, event: QKeyEvent):
+        """处理键盘释放事件"""
+        key = event.key()
+        
+        # 防止重复触发
+        if event.isAutoRepeat():
+            return
+        
+        # 获取方向控制面板视图
+        if hasattr(self, '_control_panel_view'):
+            direction_view = self._control_panel_view.direction_control_panel_view
+            
+            if direction_view:
+                key_map = {
+                    Qt.Key.Key_Up: 'up',
+                    Qt.Key.Key_Down: 'down',
+                    Qt.Key.Key_Left: 'left',
+                    Qt.Key.Key_Right: 'right',
+                    Qt.Key.Key_Space: 'stop'
+                }
+                
+                if key in key_map:
+                    direction_view.simulate_button_release(key_map[key])
+                    event.accept()
+                    return
+        
+        super().keyReleaseEvent(event)
+    
+    @property
+    def presenter(self):
+        return self._presenter
+    
+    @presenter.setter
+    def presenter(self, presenter):
+        self._presenter = presenter

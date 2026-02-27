@@ -87,6 +87,9 @@ class HeadPresenter(BasePresenter, MessageHandler):
         if message.type == "serial.connection.status":
             self._model.connection_status = message.payload
             self._view.update_connection_status(message.payload)
+            if not message.payload:
+                self._model.has_obstacle = False
+                self._view.update_obstacle_status(False)
             return HandleResult.CONTINUE
 
         if message.type == "serial.ports.available":
@@ -99,6 +102,12 @@ class HeadPresenter(BasePresenter, MessageHandler):
             alert_count = message.payload.get("alert_count", 0)
             self._model.is_alarm_triggered = has_alert
             self._view.update_alarm_status(has_alert, alert_count)
+            return HandleResult.CONTINUE
+
+        if message.type == "sensor.obstacle.status":
+            has_obstacle = bool(message.payload.get("detected", False))
+            self._model.has_obstacle = has_obstacle
+            self._view.update_obstacle_status(has_obstacle)
             return HandleResult.CONTINUE
 
         return HandleResult.SKIP

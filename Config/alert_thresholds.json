@@ -1,6 +1,6 @@
 {
   "temperature": {
-    "high": 10.0,
+    "high": 30.0,
     "low": -10.0
   },
   "humidity": {
@@ -8,8 +8,8 @@
     "low": 20.0
   },
   "co": {
-    "danger": 50.0,
-    "warning": 30.0
+    "danger": 900.0,
+    "warning": 800.0
   },
   "light": {
     "high": 10000.0,

@@ -42,6 +42,10 @@ class ControlPanelPresenter(BasePresenter, MessageHandler):
             model=speed_model,
         )
 
+        # 连接巡逻控制按钮信号
+        self._view.patrol_start_btn.clicked.connect(self._on_patrol_start)
+        self._view.patrol_stop_btn.clicked.connect(self._on_patrol_stop)
+
         # 注册消息处理
         self._message_manager.register(self)
 
@@ -49,6 +53,22 @@ class ControlPanelPresenter(BasePresenter, MessageHandler):
         serial_status = SerialManager().GetSerialStatus()
         self._model.is_serial_connected = serial_status
         self._view.set_connected(serial_status)
+    
+    def get_direction_presenter(self):
+        """获取方向控制 Presenter（供键盘快捷键使用）"""
+        return self._direction_presenter
+    
+    def _on_patrol_start(self):
+        """处理启动巡逻按钮点击"""
+        print("Patrol Start button clicked")
+        data_pack = b'@9\r\n'
+        SerialManager().write(data_pack)
+    
+    def _on_patrol_stop(self):
+        """处理停止巡逻按钮点击"""
+        print("Patrol Stop button clicked")
+        data_pack = b'@10\r\n'
+        SerialManager().write(data_pack)
 
     def handle(self, message: Message) -> HandleResult:
         """监听连接状态变更"""

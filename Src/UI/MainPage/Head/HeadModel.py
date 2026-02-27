@@ -10,3 +10,4 @@ class HeadModel:
     available_ports: List[str] = field(default_factory=list)
     selected_port: str = ""
     is_alarm_triggered: bool = False
+    has_obstacle: bool = False

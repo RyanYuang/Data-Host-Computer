@@ -34,6 +34,15 @@ class AlertManager(MessageHandler):
         self._sound_files = {}  # 存储声音文件路径
         self._system = platform.system()  # 获取系统类型
         self._active_msg_boxes = []  # 保持非模态弹窗引用，防止被 GC 回收
+        self._active_sound_processes = []  # 保存正在播放的音频进程
+        
+        # ── 存储最新的传感器数据 ──
+        self._latest_sensor_data = None
+        
+        # ── 定时器：每秒检查一次告警 ──
+        self._alert_check_timer = QTimer()
+        self._alert_check_timer.timeout.connect(self._check_alerts_periodic)
+        self._alert_check_timer.start(1000)  # 每1秒检查一次
         
         # ── 加载告警阈值配置（常驻） ──
         self._threshold_model = AlertThresholdModel()
@@ -70,59 +79,86 @@ class AlertManager(MessageHandler):
             self._sound_files["warning"] = warning_sound
             print(f"[AlertManager] 已找到警告声音文件: {warning_sound}")
     
+    def _check_alerts_periodic(self):
+        """定时检查告警（每1秒调用一次）"""
+        # 如果没有最新数据，跳过检查
+        if self._latest_sensor_data is None:
+            return
+        
+        data = self._latest_sensor_data
+        temperature = data.get("temperature", 0)
+        humidity = data.get("humidity", 0)
+        co_level = data.get("co", 0)
+        light = data.get("light", 0)
+        
+        # 使用常驻的阈值模型检查告警
+        result = self._threshold_model.check_alerts(
+            temperature, humidity, co_level, light
+        )
+        
+        # 发送数据超阈值状态（用于UI闪烁显示）
+        alert_types = [alert.get("type") for alert in result["alerts"]]
+        self._message_manager.dispatch(
+            Message("sensor.alert.status", {
+                "alert_types": alert_types  # ['temperature', 'co', ...]
+            })
+        )
+        
+        if result["count"] > 0:
+            new_alerts_triggered = False
+            for alert in result["alerts"]:
+                alert_type = alert.get("type", "unknown")
+                level = alert.get("level", "info")
+                alert_msg = alert.get("message", "")
+                
+                # 避免重复弹窗：同类告警只弹一次，清除后才能再弹
+                if alert_type not in self._current_alerts:
+                    self._current_alerts.add(alert_type)
+                    self._alert_count += 1
+                    new_alerts_triggered = True
+                    self._show_alert(level, alert_msg)
+                    
+                    # 播放告警声音
+                    if self._threshold_model.sound_enabled and level in ["danger", "warning"]:
+                        self._play_alert_sound(level)
+            
+            # 有新告警触发时，通知 UI 更新按钮状态
+            if new_alerts_triggered:
+                self._message_manager.dispatch(
+                    Message("alert.status.changed", {
+                        "has_alert": True,
+                        "alert_count": len(self._current_alerts),
+                    })
+                )
+        else:
+            # 所有数据正常，立即清除活跃告警并关闭弹窗
+            if self._current_alerts:
+                print("[AlertManager] 数据恢复正常，关闭所有告警弹窗和声音")
+                
+                # 关闭所有活跃的告警弹窗
+                for msg_box in self._active_msg_boxes[:]:
+                    msg_box.close()
+                self._active_msg_boxes.clear()
+                
+                # 停止所有警报声音
+                self._stop_all_sounds()
+                
+                # 清除告警状态
+                self._current_alerts.clear()
+                
+                # 告警恢复，通知 UI 更新按钮状态
+                self._message_manager.dispatch(
+                    Message("alert.status.changed", {
+                        "has_alert": False,
+                        "alert_count": 0,
+                    })
+                )
+    
     def handle(self, message: Message) -> HandleResult:
         """处理告警消息"""
-        # ── 核心：监听传感器数据，实时检查阈值 ──
+        # ── 监听传感器数据，存储最新数据供定时器使用 ──
         if message.type == "sensor.data.updated":
-            data = message.payload
-            temperature = data.get("temperature", 0)
-            humidity = data.get("humidity", 0)
-            co_level = data.get("co", 0)
-            light = data.get("light", 0)
-            
-            # 使用常驻的阈值模型检查告警
-            result = self._threshold_model.check_alerts(
-                temperature, humidity, co_level, light
-            )
-            
-            if result["count"] > 0:
-                new_alerts_triggered = False
-                for alert in result["alerts"]:
-                    alert_type = alert.get("type", "unknown")
-                    level = alert.get("level", "info")
-                    alert_msg = alert.get("message", "")
-                    
-                    # 避免重复弹窗：同类告警只弹一次，清除后才能再弹
-                    if alert_type not in self._current_alerts:
-                        self._current_alerts.add(alert_type)
-                        self._alert_count += 1
-                        new_alerts_triggered = True
-                        self._show_alert(level, alert_msg)
-                        
-                        # 播放告警声音
-                        if self._threshold_model.sound_enabled and level in ["danger", "warning"]:
-                            self._play_alert_sound(level)
-                
-                # 有新告警触发时，通知 UI 更新按钮状态
-                if new_alerts_triggered:
-                    self._message_manager.dispatch(
-                        Message("alert.status.changed", {
-                            "has_alert": True,
-                            "alert_count": len(self._current_alerts),
-                        })
-                    )
-            else:
-                # 所有数据正常，清除活跃告警
-                if self._current_alerts:
-                    self._current_alerts.clear()
-                    # 告警恢复，通知 UI 更新按钮状态
-                    self._message_manager.dispatch(
-                        Message("alert.status.changed", {
-                            "has_alert": False,
-                            "alert_count": 0,
-                        })
-                    )
-            
+            self._latest_sensor_data = message.payload
             return HandleResult.CONTINUE  # 不消费，让其他 handler 也可以处理
         
         # ── 阈值配置更新（由 AlertThresholdPresenter 保存后触发） ──
@@ -131,6 +167,30 @@ class AlertManager(MessageHandler):
             if config:
                 self._update_threshold_from_dict(config)
                 print(f"[AlertManager] 阈值已更新: 温度 {self._threshold_model.temp_low}~{self._threshold_model.temp_high}°C")
+            return HandleResult.CONTINUE
+        
+        # ── 串口连接状态变化 ──
+        if message.type == "serial.connection.status":
+            is_connected = message.payload
+            if not is_connected:
+                # 断开连接时，关闭所有告警弹窗并清除告警状态
+                print("[AlertManager] 串口断开，关闭所有告警弹窗和声音")
+                for msg_box in self._active_msg_boxes[:]:
+                    msg_box.close()
+                self._active_msg_boxes.clear()
+                
+                # 停止所有警报声音
+                self._stop_all_sounds()
+                
+                # 清除告警状态
+                if self._current_alerts:
+                    self._current_alerts.clear()
+                    self._message_manager.dispatch(
+                        Message("alert.status.changed", {
+                            "has_alert": False,
+                            "alert_count": 0,
+                        })
+                    )
             return HandleResult.CONTINUE
 
         if message.type == "alert.triggered":
@@ -241,24 +301,26 @@ class AlertManager(MessageHandler):
             msg_box.close()
     
     def _play_alert_sound(self, level: str):
-        """播放告警声音"""
+        """播放告警声音（仅播放自定义音频文件）"""
         print(f"[AlertManager] 播放 {level} 级别告警声音")
         
-        # 方案1: 使用系统命令播放音频文件
+        # 仅使用自定义音频文件，不使用系统蜂鸣声
         sound_file = self._sound_files.get(level)
         
         if sound_file and os.path.exists(sound_file):
             try:
                 if self._system == "Darwin":  # macOS
-                    subprocess.Popen(["afplay", sound_file],
+                    proc = subprocess.Popen(["afplay", sound_file],
                                      stdout=subprocess.DEVNULL,
                                      stderr=subprocess.DEVNULL)
+                    self._active_sound_processes.append(proc)
                     print(f"[AlertManager] ✅ 使用 afplay 播放: {sound_file}")
                     return
                 elif self._system == "Linux":
-                    subprocess.Popen(["aplay", sound_file],
+                    proc = subprocess.Popen(["aplay", sound_file],
                                      stdout=subprocess.DEVNULL,
                                      stderr=subprocess.DEVNULL)
+                    self._active_sound_processes.append(proc)
                     print(f"[AlertManager] ✅ 使用 aplay 播放: {sound_file}")
                     return
                 elif self._system == "Windows":
@@ -271,13 +333,8 @@ class AlertManager(MessageHandler):
                 print(f"[AlertManager] 播放命令未找到: {e}")
             except Exception as e:
                 print(f"[AlertManager] 系统播放失败: {e}")
-        
-        # 方案2: 使用 QApplication.beep()
-        try:
-            QApplication.beep()
-            print("[AlertManager] ✅ 已播放系统蜂鸣声")
-        except Exception as e:
-            print(f"[AlertManager] 播放系统蜂鸣声失败: {e}")
+        else:
+            print(f"[AlertManager] ⚠️ 未找到 {level} 级别的音频文件，跳过播放")
     
     def play_danger_sound(self):
         """播放危险告警声音"""
@@ -308,3 +365,34 @@ class AlertManager(MessageHandler):
         """清除所有告警"""
         self._current_alerts.clear()
         self._update_tray_icon()
+    
+    def _stop_all_sounds(self):
+        """停止所有正在播放的警报声音"""
+        for proc in self._active_sound_processes[:]:
+            try:
+                if proc.poll() is None:  # 进程仍在运行
+                    proc.terminate()  # 优雅终止
+                    proc.wait(timeout=0.5)  # 等待最多0.5秒
+            except Exception as e:
+                print(f"[AlertManager] 停止音频进程失败: {e}")
+                try:
+                    proc.kill()  # 强制终止
+                except:
+                    pass
+        self._active_sound_processes.clear()
+        print("[AlertManager] 已停止所有警报声音")
+    
+    def cleanup(self):
+        """清理资源（应用退出时调用）"""
+        print("[AlertManager] 清理资源...")
+        # 停止定时器
+        if hasattr(self, '_alert_check_timer'):
+            self._alert_check_timer.stop()
+        
+        # 关闭所有弹窗
+        for msg_box in self._active_msg_boxes[:]:
+            msg_box.close()
+        self._active_msg_boxes.clear()
+        
+        # 停止所有声音
+        self._stop_all_sounds()

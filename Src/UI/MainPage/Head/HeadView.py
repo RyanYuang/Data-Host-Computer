@@ -1,4 +1,4 @@
-from PyQt6.QtCore import QSize, pyqtSignal
+from PyQt6.QtCore import QSize, pyqtSignal, QTimer
 from PyQt6.QtGui import QFont, QIcon
 from PyQt6.QtWidgets import QLabel, QPushButton, QHBoxLayout
 
@@ -21,7 +21,11 @@ class HeadView(BaseView):
         self.TitleLabel: QLabel = None
         self.ConnectButton: QPushButton = None
         self.AlarmButton: QPushButton = None
+        self.ObstacleButton: QPushButton = None
         self.SettingButton: QPushButton = None
+        self._obstacle_blink_timer = QTimer(self)
+        self._obstacle_blink_timer.timeout.connect(self._toggle_obstacle_blink)
+        self._obstacle_blink_state = False
 
         # 样式预设
         self._connect_btn_default_style = """
@@ -90,6 +94,55 @@ class HeadView(BaseView):
                 }
             """)
 
+    def update_obstacle_status(self, has_obstacle: bool):
+        """更新障碍状态指示：遇障时醒目闪烁，无障碍时熄灭。"""
+        if has_obstacle:
+            self.ObstacleButton.setText("⚠ 障碍物")
+            self._obstacle_blink_state = False
+            self._toggle_obstacle_blink()
+            if not self._obstacle_blink_timer.isActive():
+                self._obstacle_blink_timer.start(350)
+        else:
+            if self._obstacle_blink_timer.isActive():
+                self._obstacle_blink_timer.stop()
+            self.ObstacleButton.setText("无障碍")
+            self.ObstacleButton.setStyleSheet("""
+                QPushButton {
+                    border-radius: 10px;
+                    height: 40px;
+                    width: 110px;
+                    color: rgb(74,85,101);
+                    background-color: rgb(243,244,246);
+                    font-weight: normal;
+                }
+            """)
+
+    def _toggle_obstacle_blink(self):
+        """切换障碍指示按钮闪烁样式。"""
+        if self._obstacle_blink_state:
+            self.ObstacleButton.setStyleSheet("""
+                QPushButton {
+                    border-radius: 10px;
+                    height: 40px;
+                    width: 110px;
+                    color: rgb(255, 255, 255);
+                    background-color: rgb(220, 38, 38);
+                    font-weight: bold;
+                }
+            """)
+        else:
+            self.ObstacleButton.setStyleSheet("""
+                QPushButton {
+                    border-radius: 10px;
+                    height: 40px;
+                    width: 110px;
+                    color: rgb(220, 38, 38);
+                    background-color: rgb(255, 226, 226);
+                    font-weight: bold;
+                }
+            """)
+        self._obstacle_blink_state = not self._obstacle_blink_state
+
     # ── UI 初始化 ──
     def _init_ui(self):
         # 标题
@@ -132,6 +185,11 @@ class HeadView(BaseView):
             lambda: self.alarm_btn_clicked.emit(self.AlarmButton.isChecked())
         )
 
+        # 障碍状态指示
+        self.ObstacleButton = QPushButton("无障碍", self)
+        self.ObstacleButton.setEnabled(True)
+        self.update_obstacle_status(False)
+
         # 设置按钮
         setting_icon = QIcon("Resource/SettingIcon.png")
         self.SettingButton = QPushButton(self)
@@ -169,6 +227,7 @@ class HeadView(BaseView):
         layout.addWidget(self.TitleLabel)
         layout.addStretch()
         layout.addWidget(self.ConnectButton)
+        layout.addWidget(self.ObstacleButton)
         layout.addWidget(self.AlarmButton)
         layout.addWidget(self.ConsoleButton)
         layout.addWidget(self.SettingButton)

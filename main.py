@@ -46,11 +46,15 @@ if __name__ == "__main__":
         model=main_model,
         message_manager=message_manager,
     )
+    main_view.presenter = main_presenter  # 设置 presenter 引用以支持键盘快捷键
     main_presenter.start()
 
     main_window.setCentralWidget(main_view)
     main_window.setWindowTitle("环境监测系统")
     main_window.resize(1257, 818)
     main_window.show()
+
+    # ── 应用退出时清理资源 ──
+    app.aboutToQuit.connect(alert_manager.cleanup)
 
     sys.exit(app.exec())

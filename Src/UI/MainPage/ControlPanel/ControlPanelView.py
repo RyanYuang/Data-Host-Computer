@@ -1,6 +1,6 @@
 from PyQt6.QtCore import QSize, Qt
 from PyQt6.QtGui import QFont
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QHBoxLayout
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QHBoxLayout, QPushButton
 
 from Src.MVP.base_view import BaseView
 from .DirectionControlPanel.DirectionControlPanelView import DirectionControlPanelView
@@ -18,6 +18,9 @@ class ControlPanelView(BaseView):
         self._direction_panel_view: DirectionControlPanelView = None
         self._speed_control_view: SpeedControlView = None
         self._speed_control_wrapper: QWidget = None
+        self._patrol_control_wrapper: QWidget = None
+        self._patrol_start_btn: QPushButton = None
+        self._patrol_stop_btn: QPushButton = None
 
         self._init_ui()
 
@@ -25,10 +28,23 @@ class ControlPanelView(BaseView):
     @property
     def direction_panel_view(self) -> DirectionControlPanelView:
         return self._direction_panel_view
+    
+    @property
+    def direction_control_panel_view(self) -> DirectionControlPanelView:
+        """别名，与 direction_panel_view 相同"""
+        return self._direction_panel_view
 
     @property
     def speed_control_view(self) -> SpeedControlView:
         return self._speed_control_view
+    
+    @property
+    def patrol_start_btn(self) -> QPushButton:
+        return self._patrol_start_btn
+    
+    @property
+    def patrol_stop_btn(self) -> QPushButton:
+        return self._patrol_stop_btn
 
     # ── UI 状态更新（由 Presenter 调用） ──
     def set_connected(self, connected: bool):
@@ -40,6 +56,8 @@ class ControlPanelView(BaseView):
                 self._direction_panel_view.setEnabled(True)
             if self._speed_control_wrapper:
                 self._speed_control_wrapper.setEnabled(True)
+            if self._patrol_control_wrapper:
+                self._patrol_control_wrapper.setEnabled(True)
         else:
             if self._device_hint:
                 self._device_hint.show()
@@ -47,6 +65,8 @@ class ControlPanelView(BaseView):
                 self._direction_panel_view.setEnabled(False)
             if self._speed_control_wrapper:
                 self._speed_control_wrapper.setEnabled(False)
+            if self._patrol_control_wrapper:
+                self._patrol_control_wrapper.setEnabled(False)
 
     # ── UI 初始化 ──
     def _init_ui(self):
@@ -97,6 +117,77 @@ class ControlPanelView(BaseView):
         speed_control_layout.addWidget(speed_control_title)
         speed_control_layout.addWidget(self._speed_control_view)
 
+        # 巡逻控制视图（带标题 wrapper）
+        self._patrol_control_wrapper = QWidget(self)
+        patrol_control_layout = QVBoxLayout(self._patrol_control_wrapper)
+        patrol_control_layout.setContentsMargins(0, 0, 0, 0)
+        patrol_control_title = QLabel("自动巡逻", self._patrol_control_wrapper)
+        patrol_control_title_font = QFont()
+        patrol_control_title_font.setBold(True)
+        patrol_control_title_font.setPointSize(16)
+        patrol_control_title.setFont(patrol_control_title_font)
+        patrol_control_title.setStyleSheet("color: rgb(0, 0, 0);")
+        patrol_control_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        patrol_control_title.setFixedHeight(24)
+        patrol_control_layout.addWidget(patrol_control_title)
+        
+        # 巡逻控制按钮容器
+        patrol_buttons_widget = QWidget()
+        patrol_buttons_layout = QVBoxLayout(patrol_buttons_widget)
+        patrol_buttons_layout.setSpacing(15)
+        patrol_buttons_layout.setContentsMargins(20, 20, 20, 20)
+        
+        # 启动巡逻按钮
+        self._patrol_start_btn = QPushButton("🚀 启动巡逻")
+        self._patrol_start_btn.setMinimumSize(QSize(150, 60))
+        self._patrol_start_btn.setStyleSheet("""
+            QPushButton {
+                color: rgb(255, 255, 255);
+                background-color: rgb(34, 139, 34);
+                border-radius: 10px;
+                font-size: 14pt;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: rgb(50, 155, 50);
+            }
+            QPushButton:pressed {
+                background-color: rgb(20, 120, 20);
+            }
+            QPushButton:disabled {
+                background-color: rgb(180, 180, 180);
+                color: rgb(120, 120, 120);
+            }
+        """)
+        
+        # 停止巡逻按钮
+        self._patrol_stop_btn = QPushButton("🛑 停止巡逻")
+        self._patrol_stop_btn.setMinimumSize(QSize(150, 60))
+        self._patrol_stop_btn.setStyleSheet("""
+            QPushButton {
+                color: rgb(255, 255, 255);
+                background-color: rgb(220, 53, 69);
+                border-radius: 10px;
+                font-size: 14pt;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: rgb(235, 70, 85);
+            }
+            QPushButton:pressed {
+                background-color: rgb(200, 40, 55);
+            }
+            QPushButton:disabled {
+                background-color: rgb(180, 180, 180);
+                color: rgb(120, 120, 120);
+            }
+        """)
+        
+        patrol_buttons_layout.addWidget(self._patrol_start_btn)
+        patrol_buttons_layout.addWidget(self._patrol_stop_btn)
+        patrol_buttons_layout.addStretch()
+        patrol_control_layout.addWidget(patrol_buttons_widget)
+
         # 控制区域容器
         control_widget = QWidget(self)
         control_widget.setFixedSize(QSize(1177, 300))
@@ -105,6 +196,7 @@ class ControlPanelView(BaseView):
         control_layout.setContentsMargins(0, 0, 0, 0)
         control_layout.addWidget(self._direction_panel_view, 0)
         control_layout.addWidget(self._speed_control_wrapper, 0)
+        control_layout.addWidget(self._patrol_control_wrapper, 0)
         control_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         layout.addWidget(title_label)

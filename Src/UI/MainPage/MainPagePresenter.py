@@ -71,6 +71,10 @@ class MainPagePresenter(BasePresenter, MessageHandler):
     def start(self) -> None:
         """启动后的初始化（如果有需要）"""
         pass
+    
+    def get_direction_presenter(self):
+        """获取方向控制 Presenter（供键盘快捷键使用）"""
+        return self._control_panel_presenter.get_direction_presenter()
 
     def handle(self, message: Message) -> HandleResult:
         """处理连接状态消息 —— 更新 Model 并通知子模块"""

@@ -27,7 +27,10 @@ class DirectionControlPanelView(BaseView):
                 color:rgb(106, 114, 130);
                 background-color:rgb(209, 213, 220);
             }
-            QPushButton:click {
+            QPushButton:hover {
+                background-color:rgb(195, 199, 206);
+            }
+            QPushButton:pressed {
                 background-color:rgb(165, 169, 175);
             }
         """)
@@ -70,6 +73,32 @@ class DirectionControlPanelView(BaseView):
         parent_layout = QVBoxLayout(self)
         parent_layout.setContentsMargins(0, 0, 0, 0)
         parent_layout.addWidget(main_container)
+
+    def simulate_button_press(self, button_name: str):
+        """模拟按钮按下（用于键盘快捷键）"""
+        button_map = {
+            'up': self.up_btn,
+            'down': self.down_btn,
+            'left': self.left_btn,
+            'right': self.right_btn,
+            'stop': self.mid_btn
+        }
+        if button_name in button_map:
+            button = button_map[button_name]
+            button.setDown(True)
+    
+    def simulate_button_release(self, button_name: str):
+        """模拟按钮释放（用于键盘快捷键）"""
+        button_map = {
+            'up': self.up_btn,
+            'down': self.down_btn,
+            'left': self.left_btn,
+            'right': self.right_btn,
+            'stop': self.mid_btn
+        }
+        if button_name in button_map:
+            button = button_map[button_name]
+            button.setDown(False)
 
     @property
     def presenter(self):
