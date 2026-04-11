@@ -3,7 +3,7 @@ from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QHBoxLayout, QPushButton
 
 from Src.MVP.base_view import BaseView
-from .DirectionControlPanel.DirectionControlPanelView import DirectionControlPanelView
+from .DirectionControlpanel.DirectionControlPanelView import DirectionControlPanelView
 from .SpeedControl.SpeedControlView import SpeedControlView
 
 

@@ -8,8 +8,8 @@ from .ControlPanelModel import ControlPanelModel
 from .ControlPanelView import ControlPanelView
 
 # 子模块 MVP
-from .DirectionControlPanel.DirectionControlPanelModel import DirectionControlPanelModel
-from .DirectionControlPanel.DirectionControlPanelPresenter import DirectionControlPanelPresenter
+from .DirectionControlpanel.DirectionControlPanelModel import DirectionControlPanelModel
+from .DirectionControlpanel.DirectionControlPanelPresenter import DirectionControlPanelPresenter
 from .SpeedControl.SpeedControlModel import SpeedControlModel
 from .SpeedControl.SpeedControlPresenter import SpeedControlPresenter
 
