@@ -11,23 +11,12 @@ class ThreadManager(QObject):
     2. 停止线程：安全退出线程并清理资源。
     3. 全局管理：记录所有活跃线程，支持一键停止所有线程（用于程序退出时）。
     """
-    _instance = None
-    _is_initialized = False
-
-    def __new__(cls, *args, **kwargs):
-        if cls._instance is None:
-            cls._instance = super(ThreadManager, cls).__new__(cls, *args, **kwargs)
-        return cls._instance
-
     def __init__(self):
-        if ThreadManager._is_initialized:
-            return
         super().__init__()
         # 存储线程对象: {name: QThread}
         self._threads: Dict[str, QThread] = {}
         # 存储工作对象: {name: QObject}
         self._workers: Dict[str, QObject] = {}
-        ThreadManager._is_initialized = True
     # def add_worker(self, name: str, worker: QObject):
         
     def start_worker(self, name: str, worker: QObject, start_slot: Optional[Callable] = None):

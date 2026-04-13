@@ -37,7 +37,7 @@ if __name__ == "__main__":
     # ── 告警管理器 ──
     alert_manager = AlertManager(message_manager)
 
-    # ── 主界面 MVP 组装 ──
+    # # ── 主界面 MVP 组装 ──
     main_window = QMainWindow()
     main_view = MainPageView()
     main_model = MainPageModel()
